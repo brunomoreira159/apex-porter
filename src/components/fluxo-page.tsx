@@ -1,0 +1,522 @@
+'use client';
+
+import { useState, useMemo } from 'react';
+import { motion } from 'framer-motion';
+import { Plus, Search, LogOut, Inbox, Clock, ArrowRightLeft, User, Building2, Truck, Scale, Package, Calendar, FileText, AlertTriangle, Users, Mail } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card, CardContent } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '@/components/ui/dialog';
+import { useAppStore } from '@/lib/store';
+import { CATEGORIAS_FLUXO, type CategoriaFluxo, type RegistroFluxo } from '@/lib/data';
+import RegistroModal from './registro-modal';
+import { toast } from 'sonner';
+
+type StatusFilter = 'aberto' | 'finalizado' | 'todos';
+
+const catIcons: Record<CategoriaFluxo, React.ElementType> = {
+  entregas1: Package,
+  visitantes: User,
+  prestadores: Building2,
+  pesagem: Scale,
+  entregas2: Truck,
+  coleta: ArrowRightLeft,
+  movimentacao: Users,
+  correspondencias: Mail,
+};
+
+function getMainField(r: RegistroFluxo): string {
+  switch (r.categoria) {
+    case 'entregas1': return r.nome;
+    case 'visitantes': return r.nomeEmpresa;
+    case 'prestadores': return r.nomeEmpresa;
+    case 'pesagem': return r.motorista;
+    case 'entregas2': return r.motorista;
+    case 'coleta': return r.motorista;
+    case 'movimentacao': return r.nomeColaborador;
+    case 'correspondencias': return r.destinatario;
+  }
+}
+
+function getSecondaryFields(r: RegistroFluxo): { label: string; value: string }[] {
+  switch (r.categoria) {
+    case 'entregas1':
+      return [
+        { label: 'Empresa', value: r.empresa },
+        { label: 'RG/CPF', value: r.rgCpf },
+      ];
+    case 'visitantes':
+      return [
+        { label: 'Departamento', value: r.departamento },
+        { label: 'RG/CPF', value: r.rgCpf },
+      ];
+    case 'prestadores':
+      return [
+        { label: 'Departamento', value: r.departamento },
+        { label: 'RG/CPF', value: r.rgCpf },
+      ];
+    case 'pesagem':
+      return [
+        { label: 'Empresa', value: r.empresa },
+        { label: 'Placa', value: r.placa },
+        { label: 'Peso Entrada', value: `${r.pesoEntrada.toLocaleString('pt-BR')} kg` },
+      ];
+    case 'entregas2':
+      return [
+        { label: 'Empresa', value: r.empresa },
+        { label: 'Departamento', value: r.departamento },
+        { label: 'CPF/RG', value: r.cpfRg },
+      ];
+    case 'coleta':
+      return [
+        { label: 'Empresa', value: r.empresa },
+        { label: 'Placa', value: r.placa },
+        { label: 'RG/CPF', value: r.rgCpf },
+      ];
+    case 'movimentacao':
+      return [
+        { label: 'RG/CPF', value: r.rgCpf },
+        { label: 'Autorizado por', value: r.autorizadoPor },
+        { label: 'Porteiro', value: r.porteiro },
+      ];
+    case 'correspondencias':
+      return [
+        { label: 'Tipo', value: r.tipo },
+        { label: 'Remetente', value: r.remetente },
+        { label: 'Departamento', value: r.departamento },
+      ];
+  }
+}
+
+function getAllFields(r: RegistroFluxo): { label: string; value: string }[] {
+  const base: { label: string; value: string }[] = [];
+  base.push({ label: 'Categoria', value: CATEGORIAS_FLUXO.find(c => c.value === r.categoria)?.label || r.categoria });
+  base.push({ label: 'Data', value: r.data });
+  base.push({ label: 'Horário de Entrada', value: r.horarioEntrada });
+
+  switch (r.categoria) {
+    case 'entregas1':
+      base.push({ label: 'Nome', value: r.nome });
+      base.push({ label: 'Empresa', value: r.empresa });
+      base.push({ label: 'RG/CPF', value: r.rgCpf });
+      break;
+    case 'visitantes':
+      base.push({ label: 'Nome / Empresa', value: r.nomeEmpresa });
+      base.push({ label: 'Departamento', value: r.departamento });
+      base.push({ label: 'RG/CPF', value: r.rgCpf });
+      break;
+    case 'prestadores':
+      base.push({ label: 'Nome / Empresa', value: r.nomeEmpresa });
+      base.push({ label: 'Departamento', value: r.departamento });
+      base.push({ label: 'RG/CPF', value: r.rgCpf });
+      break;
+    case 'pesagem':
+      base.push({ label: 'Empresa', value: r.empresa });
+      base.push({ label: 'Placa', value: r.placa });
+      base.push({ label: 'Motorista', value: r.motorista });
+      base.push({ label: 'Peso Entrada', value: `${r.pesoEntrada.toLocaleString('pt-BR')} kg` });
+      if (r.pesoSaida) base.push({ label: 'Peso Saída', value: `${r.pesoSaida.toLocaleString('pt-BR')} kg` });
+      break;
+    case 'entregas2':
+      base.push({ label: 'Motorista', value: r.motorista });
+      base.push({ label: 'CPF/RG', value: r.cpfRg });
+      base.push({ label: 'Empresa', value: r.empresa });
+      base.push({ label: 'Departamento', value: r.departamento });
+      break;
+    case 'coleta':
+      base.push({ label: 'Empresa', value: r.empresa });
+      base.push({ label: 'Motorista', value: r.motorista });
+      base.push({ label: 'Placa', value: r.placa });
+      base.push({ label: 'RG/CPF', value: r.rgCpf });
+      break;
+    case 'movimentacao':
+      base.push({ label: 'Nome do Colaborador', value: r.nomeColaborador });
+      base.push({ label: 'RG/CPF', value: r.rgCpf });
+      base.push({ label: 'Autorizado Por', value: r.autorizadoPor });
+      base.push({ label: 'Assinatura Colaborador', value: r.assinaturaColaborador });
+      base.push({ label: 'Porteiro', value: r.porteiro });
+      break;
+    case 'correspondencias':
+      base.push({ label: 'Destinatário', value: r.destinatario });
+      base.push({ label: 'Remetente', value: r.remetente });
+      base.push({ label: 'Tipo', value: r.tipo });
+      base.push({ label: 'Departamento', value: r.departamento });
+      base.push({ label: 'Quem Retirou', value: r.quemRetirou });
+      base.push({ label: 'Porteiro', value: r.porteiro });
+      break;
+  }
+
+  if (r.horarioSaida) {
+    base.push({ label: 'Horário de Saída', value: r.horarioSaida });
+  }
+  if (r.detalhes) {
+    base.push({ label: 'Detalhes', value: r.detalhes });
+  }
+  if (r.ocorrencia) {
+    base.push({ label: 'Ocorrência', value: r.ocorrencia });
+  }
+
+  return base;
+}
+
+export default function FluxoPage() {
+  const {
+    categoriaAtiva,
+    setCategoriaAtiva,
+    registrosFluxo,
+    registrarSaida,
+    buscaFluxo,
+    setBuscaFluxo,
+  } = useAppStore();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalCategoria, setModalCategoria] = useState<CategoriaFluxo>(categoriaAtiva);
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>('aberto');
+
+  // Detail modal state
+  const [detailModalOpen, setDetailModalOpen] = useState(false);
+  const [selectedRegistro, setSelectedRegistro] = useState<RegistroFluxo | null>(null);
+  const [detalhesSaida, setDetalhesSaida] = useState('');
+  const [ocorrenciaSaida, setOcorrenciaSaida] = useState('');
+
+  const filteredRegistros = useMemo(() => {
+    return registrosFluxo.filter((r) => {
+      if (r.categoria !== categoriaAtiva) return false;
+      const hasSaida = 'horarioSaida' in r && r.horarioSaida !== '';
+      if (statusFilter === 'aberto' && hasSaida) return false;
+      if (statusFilter === 'finalizado' && !hasSaida) return false;
+      if (buscaFluxo) {
+        const search = buscaFluxo.toLowerCase();
+        const fields = Object.values(r).filter((v) => typeof v === 'string');
+        return fields.some((v) => v.toLowerCase().includes(search));
+      }
+      return true;
+    });
+  }, [registrosFluxo, categoriaAtiva, buscaFluxo, statusFilter]);
+
+  const handleAddRegistro = () => {
+    setModalCategoria(categoriaAtiva);
+    setModalOpen(true);
+  };
+
+  const handleOpenDetail = (r: RegistroFluxo) => {
+    setSelectedRegistro(r);
+    setDetalhesSaida(r.detalhes || '');
+    setOcorrenciaSaida(r.ocorrencia || '');
+    setDetailModalOpen(true);
+  };
+
+  const handleRegistrarSaida = () => {
+    if (!selectedRegistro) return;
+    registrarSaida(selectedRegistro.id, detalhesSaida, ocorrenciaSaida);
+    toast.success('Saída registrada com sucesso!');
+    setDetailModalOpen(false);
+    setSelectedRegistro(null);
+    setDetalhesSaida('');
+    setOcorrenciaSaida('');
+  };
+
+  const Icon = catIcons[categoriaAtiva];
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="flex flex-col min-h-[calc(100vh-7.5rem)]"
+    >
+      {/* Top section: Search + Filter */}
+      <div className="p-4 md:p-6 pb-0 space-y-3">
+        {/* Search bar */}
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Input
+            placeholder="Buscar por nome, placa, empresa..."
+            value={buscaFluxo}
+            onChange={(e) => setBuscaFluxo(e.target.value)}
+            className="pl-10 h-11 text-base bg-muted/50 border-0 focus-visible:ring-1"
+          />
+        </div>
+
+        {/* Category dropdown filter */}
+        <Select
+          value={categoriaAtiva}
+          onValueChange={(v) => setCategoriaAtiva(v as CategoriaFluxo)}
+        >
+          <SelectTrigger className="h-11 text-base bg-muted/50 border-0">
+            <SelectValue placeholder="Todos os tipos" />
+          </SelectTrigger>
+          <SelectContent>
+            {CATEGORIAS_FLUXO.map((cat) => (
+              <SelectItem key={cat.value} value={cat.value}>
+                {cat.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Status tabs */}
+        <Tabs
+          value={statusFilter}
+          onValueChange={(v) => setStatusFilter(v as StatusFilter)}
+        >
+          <TabsList className="w-full grid grid-cols-3 h-10">
+            <TabsTrigger
+              value="aberto"
+              className="text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            >
+              Em aberto
+            </TabsTrigger>
+            <TabsTrigger
+              value="finalizado"
+              className="text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            >
+              Finalizados
+            </TabsTrigger>
+            <TabsTrigger
+              value="todos"
+              className="text-sm data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+            >
+              Todos
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      </div>
+
+      {/* Content area - card list */}
+      <div className="flex-1 p-4 md:p-6 pt-3 pb-28 overflow-y-auto">
+        {filteredRegistros.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
+            <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-4">
+              <Inbox className="h-10 w-10 text-muted-foreground/60" />
+            </div>
+            <p className="text-lg font-medium mb-1">
+              {statusFilter === 'aberto'
+                ? 'Nenhum registro em aberto'
+                : statusFilter === 'finalizado'
+                ? 'Nenhum registro finalizado'
+                : 'Nenhum registro encontrado'}
+            </p>
+            <p className="text-sm text-muted-foreground/70">
+              Toque em Registrar entrada para começar.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {filteredRegistros.map((r) => {
+              const hasSaida = 'horarioSaida' in r && r.horarioSaida !== '';
+              const mainField = getMainField(r);
+              const secondaryFields = getSecondaryFields(r);
+              const data = 'data' in r ? (r as Record<string, string>).data : '';
+              const horarioEntrada = 'horarioEntrada' in r ? (r as Record<string, string>).horarioEntrada : '';
+              const horarioSaida = 'horarioSaida' in r ? (r as Record<string, string>).horarioSaida : '';
+
+              return (
+                <Card
+                  key={r.id}
+                  className="cursor-pointer hover:bg-muted/50 transition-colors active:scale-[0.98]"
+                  onClick={() => handleOpenDetail(r)}
+                >
+                  <CardContent className="p-5">
+                    <div className="flex items-start gap-4">
+                      <div className="p-3 rounded-xl bg-muted shrink-0">
+                        <Icon className="h-7 w-7 text-muted-foreground" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h3 className="font-bold text-base truncate">{mainField}</h3>
+                          {hasSaida ? (
+                            <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-xs">
+                              Concluído
+                            </Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs">
+                              Pendente
+                            </Badge>
+                          )}
+                        </div>
+                        <div className="mt-2 space-y-1">
+                          {secondaryFields.map((field) => (
+                            <p key={field.label} className="text-sm text-muted-foreground">
+                              <span className="font-medium">{field.label}:</span> {field.value || '-'}
+                            </p>
+                          ))}
+                        </div>
+                        <div className="flex items-center gap-3 mt-3 text-sm text-muted-foreground">
+                          <span className="flex items-center gap-1.5">
+                            <Calendar className="h-4 w-4" />
+                            {data}
+                          </span>
+                          <span className="flex items-center gap-1.5">
+                            <Clock className="h-4 w-4" />
+                            {horarioEntrada}
+                          </span>
+                          {hasSaida && (
+                            <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                              <LogOut className="h-4 w-4" />
+                              {horarioSaida}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* Fixed bottom register button - above bottom nav */}
+      <div className="fixed bottom-16 left-0 right-0 z-30 p-4 md:px-6 pb-3 bg-background/80 backdrop-blur-md border-t border-border/50">
+        <Button
+          onClick={handleAddRegistro}
+          className="w-full h-13 bg-emerald-600 hover:bg-emerald-700 text-white text-base font-semibold shadow-lg"
+        >
+          <Plus className="h-5 w-5 mr-2" />
+          Registrar entrada
+        </Button>
+      </div>
+
+      {/* Registro Modal */}
+      <RegistroModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        categoriaInicial={modalCategoria}
+      />
+
+      {/* Detail Modal */}
+      <Dialog open={detailModalOpen} onOpenChange={(v) => { if (!v) { setDetailModalOpen(false); setSelectedRegistro(null); } }}>
+        <DialogContent
+          className="max-w-md max-h-[85vh] overflow-y-auto custom-scrollbar"
+          onOpenAutoFocus={(e) => e.preventDefault()}
+        >
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {selectedRegistro && (() => {
+                const RIcon = catIcons[selectedRegistro.categoria];
+                return <RIcon className="h-5 w-5 text-emerald-600" />;
+              })()}
+              Detalhes do Registro
+            </DialogTitle>
+          </DialogHeader>
+
+          {selectedRegistro && (
+            <div className="space-y-5">
+              {/* Entry Information */}
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 mb-2">
+                  <FileText className="h-4 w-4 text-emerald-600" />
+                  <span className="font-semibold text-sm">Informações de Entrada</span>
+                </div>
+                <div className="bg-muted/50 rounded-xl p-4 space-y-2.5">
+                  {getAllFields(selectedRegistro).map((field) => (
+                    <div key={field.label} className="flex justify-between items-start gap-2">
+                      <span className="text-sm font-medium text-muted-foreground shrink-0">{field.label}</span>
+                      <span className="text-sm text-foreground text-right">{field.value || '-'}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Only show detalhes/ocorrencia/saida if not yet finalized */}
+              {!selectedRegistro.horarioSaida && (
+                <>
+                  {/* Detalhes field */}
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      Detalhes
+                    </Label>
+                    <Textarea
+                      placeholder="Informações adicionais sobre a visita..."
+                      value={detalhesSaida}
+                      onChange={(e) => setDetalhesSaida(e.target.value)}
+                      rows={3}
+                      className="text-base"
+                    />
+                  </div>
+
+                  {/* Ocorrência field */}
+                  <div className="space-y-2">
+                    <Label className="flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4 text-amber-500" />
+                      Ocorrência
+                    </Label>
+                    <Textarea
+                      placeholder="Registrar ocorrência ou incidente..."
+                      value={ocorrenciaSaida}
+                      onChange={(e) => setOcorrenciaSaida(e.target.value)}
+                      rows={3}
+                      className="text-base"
+                    />
+                  </div>
+                </>
+              )}
+
+              {/* If already has detalhes/ocorrencia and is finalized, show them read-only */}
+              {selectedRegistro.horarioSaida && (selectedRegistro.detalhes || selectedRegistro.ocorrencia) && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <AlertTriangle className="h-4 w-4 text-amber-500" />
+                    <span className="font-semibold text-sm">Registros Adicionais</span>
+                  </div>
+                  <div className="bg-muted/50 rounded-xl p-4 space-y-2.5">
+                    {selectedRegistro.detalhes && (
+                      <div>
+                        <span className="text-sm font-medium text-muted-foreground">Detalhes</span>
+                        <p className="text-sm text-foreground mt-0.5">{selectedRegistro.detalhes}</p>
+                      </div>
+                    )}
+                    {selectedRegistro.ocorrencia && (
+                      <div>
+                        <span className="text-sm font-medium text-muted-foreground">Ocorrência</span>
+                        <p className="text-sm text-foreground mt-0.5">{selectedRegistro.ocorrencia}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* Registrar Saída button - only if not yet finalized */}
+              {!selectedRegistro.horarioSaida && (
+                <Button
+                  onClick={handleRegistrarSaida}
+                  className="w-full h-12 bg-amber-600 hover:bg-amber-700 text-white text-base font-semibold"
+                >
+                  <LogOut className="h-5 w-5 mr-2" />
+                  Registrar Saída
+                </Button>
+              )}
+
+              {/* Status badge if already finalized */}
+              {selectedRegistro.horarioSaida && (
+                <div className="flex items-center justify-center gap-2 p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl">
+                  <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-sm px-3 py-1">
+                    Saída registrada às {selectedRegistro.horarioSaida}
+                  </Badge>
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </motion.div>
+  );
+}

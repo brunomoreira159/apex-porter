@@ -308,7 +308,7 @@ interface AppState {
   setCategoriaAtiva: (cat: CategoriaFluxo) => void;
   registrosFluxo: RegistroFluxo[];
   addRegistroFluxo: (registro: RegistroFluxo) => void;
-  registrarSaida: (id: string, detalhes?: string, ocorrencia?: string) => void;
+  registrarSaida: (id: string, detalhes?: string, ocorrencia?: string, pesoSaida?: number, porteiroSaida?: string) => void;
   buscaFluxo: string;
   setBuscaFluxo: (busca: string) => void;
 
@@ -538,7 +538,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   // Fluxo (Firestore-backed — Phase 3)
-  categoriaAtiva: 'entregas1',
+  categoriaAtiva: 'entregas2',
   setCategoriaAtiva: (cat) => set({ categoriaAtiva: cat }),
   registrosFluxo: [],
   addRegistroFluxo: (registro) => {
@@ -548,17 +548,39 @@ export const useAppStore = create<AppState>((set, get) => ({
       console.warn('[Firestore] Falha ao adicionar registro de fluxo:', err);
     });
   },
-  registrarSaida: (id, detalhes?: string, ocorrencia?: string) => {
+  registrarSaida: (id, detalhes?: string, ocorrencia?: string, pesoSaida?: number, porteiroSaida?: string) => {
     const now = new Date();
     const hours = now.getHours().toString().padStart(2, '0');
     const minutes = now.getMinutes().toString().padStart(2, '0');
     const horarioSaida = `${hours}:${minutes}`;
     set((state) => ({
-      registrosFluxo: state.registrosFluxo.map((r) =>
-        r.id === id ? { ...r, horarioSaida, detalhes: detalhes || r.detalhes, ocorrencia: ocorrencia || r.ocorrencia } : r
-      ),
+      registrosFluxo: state.registrosFluxo.map((r) => {
+        if (r.id !== id) return r;
+        const updated: any = {
+          ...r,
+          horarioSaida,
+          detalhes: detalhes || r.detalhes,
+          ocorrencia: ocorrencia || r.ocorrencia,
+        };
+        if (pesoSaida !== undefined && pesoSaida > 0) {
+          updated.pesoSaida = pesoSaida;
+          const pesoEntrada = (r as any).pesoEntrada ?? 0;
+          updated.resultadoDiferenca = pesoSaida - pesoEntrada;
+        }
+        if (porteiroSaida) updated.porteiroSaida = porteiroSaida;
+        return updated;
+      }),
     }));
-    updateRegistroFluxoFS(id, { horarioSaida, detalhes, ocorrencia }).catch((err) => {
+    const fsUpdate: Record<string, unknown> = { horarioSaida, detalhes, ocorrencia };
+    if (pesoSaida !== undefined && pesoSaida > 0) {
+      fsUpdate.pesoSaida = pesoSaida;
+      // calculate diferenca from current store state
+      const current = get().registrosFluxo.find((r) => r.id === id);
+      const pesoEntrada = (current as any)?.pesoEntrada ?? 0;
+      fsUpdate.resultadoDiferenca = pesoSaida - pesoEntrada;
+    }
+    if (porteiroSaida) fsUpdate.porteiroSaida = porteiroSaida;
+    updateRegistroFluxoFS(id, fsUpdate).catch((err) => {
       console.warn('[Firestore] Falha ao registrar saída de fluxo:', err);
     });
   },

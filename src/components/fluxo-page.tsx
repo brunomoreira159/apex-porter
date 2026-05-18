@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Search, LogOut, Inbox, Clock, ArrowRightLeft, User, Building2, Truck, Scale, Package, Calendar, FileText, AlertTriangle, Users, Mail } from 'lucide-react';
+import { Plus, Search, LogOut, Inbox, Clock, ArrowRightLeft, User, Building2, Truck, Scale, Package, Calendar, FileText, AlertTriangle, Users, Mail, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -184,6 +184,7 @@ export default function FluxoPage() {
     registrarSaida,
     buscaFluxo,
     setBuscaFluxo,
+    user,
   } = useAppStore();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalCategoria, setModalCategoria] = useState<CategoriaFluxo>(categoriaAtiva);
@@ -194,6 +195,7 @@ export default function FluxoPage() {
   const [selectedRegistro, setSelectedRegistro] = useState<RegistroFluxo | null>(null);
   const [detalhesSaida, setDetalhesSaida] = useState('');
   const [ocorrenciaSaida, setOcorrenciaSaida] = useState('');
+  const [pesoSaidaInput, setPesoSaidaInput] = useState('');
 
   const filteredRegistros = useMemo(() => {
     return registrosFluxo.filter((r) => {
@@ -219,17 +221,23 @@ export default function FluxoPage() {
     setSelectedRegistro(r);
     setDetalhesSaida(r.detalhes || '');
     setOcorrenciaSaida(r.ocorrencia || '');
+    setPesoSaidaInput('');
     setDetailModalOpen(true);
   };
 
   const handleRegistrarSaida = () => {
     if (!selectedRegistro) return;
-    registrarSaida(selectedRegistro.id, detalhesSaida, ocorrenciaSaida);
+    const pesoSaida = selectedRegistro.categoria === 'pesagem'
+      ? parseFloat(pesoSaidaInput.replace(',', '.')) || 0
+      : undefined;
+    const porteiroSaida = user?.nome || undefined;
+    registrarSaida(selectedRegistro.id, detalhesSaida, ocorrenciaSaida, pesoSaida, porteiroSaida);
     toast.success('Saída registrada com sucesso!');
     setDetailModalOpen(false);
     setSelectedRegistro(null);
     setDetalhesSaida('');
     setOcorrenciaSaida('');
+    setPesoSaidaInput('');
   };
 
   const Icon = catIcons[categoriaAtiva];
@@ -322,9 +330,16 @@ export default function FluxoPage() {
               const hasSaida = 'horarioSaida' in r && r.horarioSaida !== '';
               const mainField = getMainField(r);
               const secondaryFields = getSecondaryFields(r);
-              const data = 'data' in r ? (r as Record<string, string>).data : '';
-              const horarioEntrada = 'horarioEntrada' in r ? (r as Record<string, string>).horarioEntrada : '';
-              const horarioSaida = 'horarioSaida' in r ? (r as Record<string, string>).horarioSaida : '';
+              const data = 'data' in r ? (r as any).data : '';
+              const horarioEntrada = 'horarioEntrada' in r ? (r as any).horarioEntrada : '';
+              const horarioSaida = 'horarioSaida' in r ? (r as any).horarioSaida : '';
+              // PESAGEM DE CARGA extras
+              const isPesagem = r.categoria === 'pesagem';
+              const pesoEntrada = isPesagem ? (r as any).pesoEntrada ?? 0 : 0;
+              const pesoSaidaVal = isPesagem ? (r as any).pesoSaida ?? 0 : 0;
+              const resultadoDif = isPesagem ? (r as any).resultadoDiferenca ?? null : null;
+              const porteiroEntrada = (r as any).porteiroEntrada || null;
+              const porteiroSaidaVal = (r as any).porteiroSaida || null;
 
               return (
                 <Card
@@ -332,47 +347,81 @@ export default function FluxoPage() {
                   className="cursor-pointer hover:bg-muted/50 transition-colors active:scale-[0.98]"
                   onClick={() => handleOpenDetail(r)}
                 >
-                  <CardContent className="p-5">
-                    <div className="flex items-start gap-4">
-                      <div className="p-3 rounded-xl bg-muted shrink-0">
-                        <Icon className="h-7 w-7 text-muted-foreground" />
+                  <CardContent className="p-3.5">
+                    <div className="flex items-start gap-3">
+                      <div className="p-2.5 rounded-xl bg-muted shrink-0">
+                        <Icon className="h-6 w-6 text-muted-foreground" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-bold text-base truncate">{mainField}</h3>
+                          <h3 className="font-bold text-lg truncate">{mainField}</h3>
                           {hasSaida ? (
-                            <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-xs">
+                            <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-xs px-1.5 py-0">
                               Concluído
                             </Badge>
                           ) : (
-                            <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs">
+                            <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs px-1.5 py-0">
                               Pendente
                             </Badge>
                           )}
                         </div>
-                        <div className="mt-2 space-y-1">
+                        <div className="mt-1 space-y-0.5">
                           {secondaryFields.map((field) => (
-                            <p key={field.label} className="text-sm text-muted-foreground">
+                            <p key={field.label} className="text-base leading-snug text-muted-foreground">
                               <span className="font-medium">{field.label}:</span> {field.value || '-'}
                             </p>
                           ))}
                         </div>
-                        <div className="flex items-center gap-3 mt-3 text-sm text-muted-foreground">
+
+                        {/* PESAGEM DE CARGA — resultado em destaque nos finalizados */}
+                        {isPesagem && hasSaida && resultadoDif !== null && (
+                          <div className={`mt-2 rounded-xl px-3 py-2 border ${
+                            resultadoDif >= 0
+                              ? 'bg-emerald-500/10 border-emerald-500/30'
+                              : 'bg-red-500/10 border-red-500/30'
+                          }`}>
+                            <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                              Resultado Pesagem
+                            </p>
+                            <p className={`text-2xl font-black ${
+                              resultadoDif >= 0 ? 'text-emerald-400' : 'text-red-400'
+                            }`}>
+                              {resultadoDif >= 0 ? '+' : ''}{resultadoDif.toLocaleString('pt-BR')} kg
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Entrada: {pesoEntrada.toLocaleString('pt-BR')} kg · Saída: {pesoSaidaVal.toLocaleString('pt-BR')} kg
+                            </p>
+                          </div>
+                        )}
+
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1.5">
                             <Calendar className="h-4 w-4" />
                             {data}
                           </span>
                           <span className="flex items-center gap-1.5">
                             <Clock className="h-4 w-4" />
-                            {horarioEntrada}
+                            Entrou ás: {horarioEntrada}
                           </span>
                           {hasSaida && (
                             <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
                               <LogOut className="h-4 w-4" />
-                              {horarioSaida}
+                              Saiu ás: {horarioSaida}
                             </span>
                           )}
                         </div>
+
+                        {/* Porteiros */}
+                        {(porteiroEntrada || porteiroSaidaVal) && (
+                          <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground/70">
+                            {porteiroEntrada && (
+                              <span>🔑 Entrada: <span className="font-medium text-muted-foreground">{porteiroEntrada}</span></span>
+                            )}
+                            {porteiroSaidaVal && (
+                              <span>🚪 Saída: <span className="font-medium text-muted-foreground">{porteiroSaidaVal}</span></span>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -402,7 +451,7 @@ export default function FluxoPage() {
       />
 
       {/* Detail Modal */}
-      <Dialog open={detailModalOpen} onOpenChange={(v) => { if (!v) { setDetailModalOpen(false); setSelectedRegistro(null); } }}>
+      <Dialog open={detailModalOpen} onOpenChange={(v) => { if (!v) { setDetailModalOpen(false); setSelectedRegistro(null); setPesoSaidaInput(''); } }}>
         <DialogContent
           className="max-w-md max-h-[85vh] overflow-y-auto custom-scrollbar"
           onOpenAutoFocus={(e) => e.preventDefault()}
@@ -438,6 +487,50 @@ export default function FluxoPage() {
               {/* Only show detalhes/ocorrencia/saida if not yet finalized */}
               {!selectedRegistro.horarioSaida && (
                 <>
+                  {/* Peso de Saída — PESAGEM DE CARGA only */}
+                  {selectedRegistro.categoria === 'pesagem' && (() => {
+                    const pesoEntrada = (selectedRegistro as any).pesoEntrada ?? 0;
+                    const pesoSaidaNum = parseFloat(pesoSaidaInput.replace(',', '.')) || 0;
+                    const diferenca = pesoSaidaNum - pesoEntrada;
+                    const hasDiferenca = pesoSaidaInput.trim() !== '' && pesoSaidaNum > 0;
+                    return (
+                      <div className="space-y-3">
+                        <div className="space-y-1.5">
+                          <Label className="flex items-center gap-2">
+                            <Scale className="h-4 w-4 text-emerald-500" />
+                            Peso de Saída (kg)
+                          </Label>
+                          <Input
+                            type="number"
+                            placeholder="Ex: 8500"
+                            value={pesoSaidaInput}
+                            onChange={(e) => setPesoSaidaInput(e.target.value)}
+                            className="text-base"
+                          />
+                        </div>
+                        {hasDiferenca && (
+                          <div className={`rounded-2xl p-4 text-center border-2 ${
+                            diferenca >= 0
+                              ? 'bg-emerald-500/10 border-emerald-500/40'
+                              : 'bg-red-500/10 border-red-500/40'
+                          }`}>
+                            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+                              Diferença (Saída − Entrada)
+                            </p>
+                            <p className={`text-4xl font-black tracking-tight ${
+                              diferenca >= 0 ? 'text-emerald-400' : 'text-red-400'
+                            }`}>
+                              {diferenca >= 0 ? '+' : ''}{diferenca.toLocaleString('pt-BR')} kg
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Entrada: {pesoEntrada.toLocaleString('pt-BR')} kg • Saída: {pesoSaidaNum.toLocaleString('pt-BR')} kg
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
                   {/* Detalhes field */}
                   <div className="space-y-2">
                     <Label className="flex items-center gap-2">

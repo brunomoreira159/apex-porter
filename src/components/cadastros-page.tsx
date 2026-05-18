@@ -85,7 +85,7 @@ const EMPTY_FORM: FormState = {
 };
 
 export default function CadastrosPage() {
-  const { pessoas, addPessoa, removePessoa, updatePessoa, departamentos, registrosFluxo } = useAppStore();
+  const { pessoas, addPessoa, removePessoa, updatePessoa, departamentos, empresas, registrosFluxo } = useAppStore();
 
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -201,7 +201,6 @@ export default function CadastrosPage() {
           company = r.empresa;
           plate = r.placa;
           name = r.motorista;
-          doc = r.rgCpf;
           break;
         case 'entregas2':
           name = r.motorista;
@@ -631,13 +630,23 @@ export default function CadastrosPage() {
             {/* Empresa */}
             <div className="space-y-1.5">
               <Label className="text-xs font-medium">Empresa *</Label>
-              <AutocompleteInput
+              <Select
                 value={form.empresa}
-                onChange={(v) => updateForm('empresa', v)}
-                onSelect={(s) => handleAutoSelect(s.data)}
-                suggestions={empresaSuggestions}
-                placeholder="Nome da empresa"
-              />
+                onValueChange={(v) => updateForm('empresa', v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione a empresa" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[...empresas]
+                    .sort((a, b) => a.nome.localeCompare(b.nome))
+                    .map((emp) => (
+                      <SelectItem key={emp.id || emp.nome} value={emp.nome}>
+                        {emp.nome}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
             </div>
 
             {/* Departamento */}
@@ -651,11 +660,13 @@ export default function CadastrosPage() {
                   <SelectValue placeholder="Selecione o departamento" />
                 </SelectTrigger>
                 <SelectContent>
-                  {departamentos.map((dep) => (
-                    <SelectItem key={dep.id} value={dep.nome}>
-                      {dep.nome}
-                    </SelectItem>
-                  ))}
+                  {[...departamentos]
+                    .sort((a, b) => a.nome.localeCompare(b.nome))
+                    .map((dep) => (
+                      <SelectItem key={dep.id || dep.nome} value={dep.nome}>
+                        {dep.nome}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
               <p className="text-[10px] text-muted-foreground">

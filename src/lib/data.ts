@@ -11,6 +11,7 @@ export type PageType =
   | 'relatorios'
   | 'cadastros'
   | 'departamentos'
+  | 'empresas'
   | 'ramais'
   | 'avisos'
   | 'lista-negra'
@@ -33,11 +34,10 @@ export type CategoriaFluxo =
   | 'correspondencias';
 
 export const CATEGORIAS_FLUXO: { value: CategoriaFluxo; label: string }[] = [
-  { value: 'entregas1', label: 'ENTREGAS' },
   { value: 'visitantes', label: 'VISITANTES' },
   { value: 'prestadores', label: 'PRESTADORES DE SERVIÇOS' },
-  { value: 'pesagem', label: 'PLANILHA DE PESAGEM' },
-  { value: 'entregas2', label: 'ENTREGAS (2)' },
+  { value: 'pesagem', label: 'PESAGEM DE CARGA' },
+  { value: 'entregas2', label: 'ENTREGAS' },
   { value: 'coleta', label: 'COLETA' },
   { value: 'movimentacao', label: 'MOVIMENTAÇÃO INTERNA COLABORADORES' },
   { value: 'correspondencias', label: 'CORRESPONDÊNCIAS' },
@@ -97,6 +97,9 @@ export interface RegistroPesagem {
   pesoEntrada: number;
   horarioSaida: string;
   pesoSaida: number;
+  resultadoDiferenca?: number;
+  porteiroEntrada?: string;
+  porteiroSaida?: string;
   detalhes?: string;
   ocorrencia?: string;
 }

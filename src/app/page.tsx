@@ -23,6 +23,7 @@ import ChecklistTurnoPage from '@/components/checklist-turno-page';
 import InspecaoDiariaPage from '@/components/inspecao-diaria-page';
 import ProtocolosEmergenciaPage from '@/components/protocolos-emergencia-page';
 import DepartamentosPage from '@/components/departamentos-page';
+import EmpresasPage from '@/components/empresas-page';
 import AppHeader from '@/components/app-header';
 import BottomNav from '@/components/bottom-nav';
 
@@ -35,6 +36,7 @@ function PageRenderer() {
     relatorios: <RelatoriosPage />,
     cadastros: <CadastrosPage />,
     departamentos: <DepartamentosPage />,
+    empresas: <EmpresasPage />,
     ramais: <RamaisPage />,
     avisos: <AvisosPage />,
     'lista-negra': <ListaNegraPage />,

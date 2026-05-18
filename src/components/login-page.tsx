@@ -375,15 +375,18 @@ export default function LoginPage() {
 
                     <div className="space-y-2">
                       <Label className="text-emerald-200/60 text-xs tracking-wider uppercase">Cargo</Label>
-                      <Input
-                        type="text"
-                        placeholder="Ex: Porteiro, Vigilante..."
+                      <select
                         value={cargo}
                         onChange={(e) => setCargo(e.target.value)}
-                        className="bg-emerald-950/40 border-emerald-800/30 text-emerald-50 placeholder:text-emerald-700/50 focus:border-emerald-500/50 focus:ring-emerald-500/20"
+                        className="h-10 w-full rounded-md bg-emerald-950/40 border border-emerald-800/30 text-emerald-50 focus:border-emerald-500/50 focus:ring-emerald-500/20 focus:outline-none px-3 py-2 text-sm cursor-pointer"
                         style={{ colorScheme: 'dark' }}
                         disabled={authLoading}
-                      />
+                      >
+                        <option value="Porteiro" className="bg-emerald-950 text-emerald-50">PORTEIRO</option>
+                        <option value="Supervisor" className="bg-emerald-950 text-emerald-50">SUPERVISOR</option>
+                        <option value="Diretor" className="bg-emerald-950 text-emerald-50">DIRETOR</option>
+                        <option value="RH" className="bg-emerald-950 text-emerald-50">RH</option>
+                      </select>
                     </div>
 
                     {displayError && (
@@ -531,7 +534,7 @@ export default function LoginPage() {
         </div>
 
         <p className="text-center text-emerald-300/20 text-xs mt-6 tracking-widest uppercase">
-          APEX Porter v2.0 — Firebase Edition
+          APEX Porter v2.0 — DESENVOLVIDO POR APEX HUB
         </p>
       </motion.div>
     </div>

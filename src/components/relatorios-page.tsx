@@ -104,10 +104,10 @@ export default function RelatoriosPage() {
     return registrosFluxo.filter(r => {
       if (categoriaFiltro !== 'todos' && r.categoria !== categoriaFiltro) return false;
       if (departamentoFiltro !== 'todos') {
-        const dep = 'departamento' in r ? (r as Record<string, unknown>).departamento : '';
+        const dep = 'departamento' in r ? (r as any).departamento : '';
         if (dep !== departamentoFiltro) return false;
       }
-      const hasSaida = 'horarioSaida' in r && (r as Record<string, string>).horarioSaida !== '';
+      const hasSaida = 'horarioSaida' in r && (r as any).horarioSaida !== '';
       if (statusFiltro === 'pendente' && hasSaida) return false;
       if (statusFiltro === 'concluido' && !hasSaida) return false;
       return true;
@@ -116,7 +116,7 @@ export default function RelatoriosPage() {
 
   const fluxoStats = useMemo(() => {
     const entradas = fluxoFiltered.length;
-    const saidas = fluxoFiltered.filter(r => 'horarioSaida' in r && (r as Record<string, string>).horarioSaida !== '').length;
+    const saidas = fluxoFiltered.filter(r => 'horarioSaida' in r && (r as any).horarioSaida !== '').length;
     const pendentes = entradas - saidas;
     const byCategory = CATEGORIAS_FLUXO.map(cat => ({
       label: cat.label,
@@ -144,11 +144,11 @@ export default function RelatoriosPage() {
 
   const corrStats = useMemo(() => {
     const total = correspondenciasFiltered.length;
-    const retirados = correspondenciasFiltered.filter(r => (r as Record<string, string>).horarioSaida !== '').length;
+    const retirados = correspondenciasFiltered.filter(r => (r as any).horarioSaida !== '').length;
     const pendentes = total - retirados;
     const byDepartamento = OPCOES_DEPARTAMENTOS.map(dep => ({
       label: dep,
-      value: correspondenciasFiltered.filter(r => (r as Record<string, string>).departamento === dep).length,
+      value: correspondenciasFiltered.filter(r => (r as any).departamento === dep).length,
     })).filter(d => d.value > 0);
     return { total, retirados, pendentes, byDepartamento };
   }, [correspondenciasFiltered]);
@@ -169,7 +169,7 @@ export default function RelatoriosPage() {
     if (activeTab === 'fluxo') {
       csv = 'Categoria,Nome Principal,Data,Entrada,Saída\n';
       fluxoFiltered.forEach(r => {
-        csv += `${CATEGORIAS_FLUXO.find(c => c.value === r.categoria)?.label || r.categoria},"${getMainField(r)}",${'data' in r ? (r as Record<string, string>).data : ''},${'horarioEntrada' in r ? (r as Record<string, string>).horarioEntrada : ''},${'horarioSaida' in r ? (r as Record<string, string>).horarioSaida : 'Pendente'}\n`;
+        csv += `${CATEGORIAS_FLUXO.find(c => c.value === r.categoria)?.label || r.categoria},"${getMainField(r)}",${'data' in r ? (r as any).data : ''},${'horarioEntrada' in r ? (r as any).horarioEntrada : ''},${'horarioSaida' in r ? (r as any).horarioSaida : 'Pendente'}\n`;
       });
     } else if (activeTab === 'veiculos') {
       csv = 'Placa,Modelo,Cor,Tipo,Motorista,Empresa,Vaga,Data,Entrada,Saída\n';
@@ -179,7 +179,7 @@ export default function RelatoriosPage() {
     } else if (activeTab === 'correspondencias') {
       csv = 'Destinatário,Remetente,Tipo,Departamento,Data,Entrada,Retirada,Quem Retirou\n';
       correspondenciasFiltered.forEach(r => {
-        const c = r as Record<string, string>;
+        const c = r as any;
         csv += `"${c.destinatario}","${c.remetente}",${c.tipo},${c.departamento},${c.data},${c.horarioEntrada},${c.horarioSaida || 'Pendente'},"${c.quemRetirou || '-'}"\n`;
       });
     } else {
@@ -310,7 +310,7 @@ export default function RelatoriosPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {fluxoFiltered.slice(0, 20).map(r => {
               const catLabel = CATEGORIAS_FLUXO.find(c => c.value === r.categoria)?.label || r.categoria;
-              const hasSaida = 'horarioSaida' in r && (r as Record<string, string>).horarioSaida !== '';
+              const hasSaida = 'horarioSaida' in r && (r as any).horarioSaida !== '';
               const Icon = catIcons[r.categoria];
               return (
                 <Card key={r.id}>
@@ -320,9 +320,9 @@ export default function RelatoriosPage() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2"><span className="font-semibold text-sm truncate">{getMainField(r)}</span><Badge variant="secondary" className="text-[10px] px-1.5 py-0">{catLabel}</Badge></div>
                         <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                          <span>{'data' in r ? (r as Record<string, string>).data : ''}</span>
-                          <span>{'horarioEntrada' in r ? (r as Record<string, string>).horarioEntrada : ''}</span>
-                          {hasSaida && <span className="text-emerald-600">{(r as Record<string, string>).horarioSaida}</span>}
+                          <span>{'data' in r ? (r as any).data : ''}</span>
+                          <span>{'horarioEntrada' in r ? (r as any).horarioEntrada : ''}</span>
+                          {hasSaida && <span className="text-emerald-600">{(r as any).horarioSaida}</span>}
                         </div>
                       </div>
                       {hasSaida ? <Badge className="bg-emerald-100 text-emerald-700 text-[10px]">OK</Badge> : <Badge variant="outline" className="text-amber-600 border-amber-300 text-[10px]">Pend.</Badge>}

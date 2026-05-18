@@ -26,6 +26,7 @@ import {
   type RegistroFluxo,
 } from '@/lib/data';
 import AutocompleteInput, { type AutocompleteSuggestion } from './autocomplete-input';
+import SearchInput from './search-input';
 import { toast } from 'sonner';
 
 // Unified data structure for autocomplete — stores ALL available info
@@ -36,6 +37,7 @@ interface UnifiedSuggestionData {
   doc: string;        // RG/CPF
   plate: string;      // vehicle plate
   department: string; // department
+  origin?: string;    // source origin ('cadastro')
 }
 
 // Maps unified data → form fields for each category
@@ -64,7 +66,6 @@ function mapToFormFields(categoria: CategoriaFluxo, data: UnifiedSuggestionData)
       if (data.name) mapped.motorista = data.name;
       if (data.company) mapped.empresa = data.company;
       if (data.plate) mapped.placa = data.plate;
-      if (data.doc) mapped.rgCpf = data.doc;
       break;
     case 'entregas2':
       if (data.name) mapped.motorista = data.name;
@@ -114,7 +115,6 @@ function extractUnifiedFromRecord(r: RegistroFluxo): UnifiedSuggestionData {
       data.company = r.empresa;
       data.plate = r.placa;
       data.name = r.motorista;
-      data.doc = r.rgCpf;
       break;
     case 'entregas2':
       data.name = r.motorista;
@@ -150,6 +150,7 @@ function mergeUnified(existing: UnifiedSuggestionData, incoming: UnifiedSuggesti
     doc: existing.doc || incoming.doc,
     plate: existing.plate || incoming.plate,
     department: existing.department || incoming.department,
+    origin: existing.origin || incoming.origin,
   };
 }
 
@@ -166,7 +167,7 @@ export default function RegistroModal({
 }: RegistroModalProps) {
   const { addRegistroFluxo, pessoas, empresas, departamentos, ramais, registrosFluxo, user } = useAppStore();
   const [categoria, setCategoria] = useState<CategoriaFluxo>(
-    categoriaInicial || 'entregas1'
+    categoriaInicial || 'entregas2'
   );
   const [formData, setFormData] = useState<Record<string, string>>(() => ({
     data: format(new Date(), 'dd/MM/yyyy'),
@@ -191,6 +192,7 @@ export default function RegistroModal({
             doc: f.rgCpf || '',
             plate: f.placa || '',
             department: f.departamento || '',
+            origin: 'cadastro',
           },
           sublabel: [
             f.tipo,
@@ -246,7 +248,7 @@ export default function RegistroModal({
     empresas.forEach((e) => {
       if (!map.has(e.nome)) {
         map.set(e.nome, {
-          data: { name: '', company: e.nome, doc: '', plate: '', department: '' },
+          data: { name: '', company: e.nome, doc: '', plate: '', department: '', origin: 'cadastro' },
           sublabel: e.cnpj || '',
         });
       }
@@ -256,13 +258,13 @@ export default function RegistroModal({
     pessoas.forEach((p) => {
       if (p.empresa && !map.has(p.empresa)) {
         map.set(p.empresa, {
-          data: { name: p.nome, company: p.empresa, doc: p.rgCpf || '', plate: p.placa || '', department: p.departamento || '' },
+          data: { name: p.nome, company: p.empresa, doc: p.rgCpf || '', plate: p.placa || '', department: p.departamento || '', origin: 'cadastro' },
           sublabel: p.nome || '',
         });
       } else if (p.empresa && map.has(p.empresa)) {
         const existing = map.get(p.empresa)!;
         map.set(p.empresa, {
-          data: mergeUnified(existing.data, { name: p.nome, company: p.empresa, doc: p.rgCpf || '', plate: p.placa || '', department: p.departamento || '' }),
+          data: mergeUnified(existing.data, { name: p.nome, company: p.empresa, doc: p.rgCpf || '', plate: p.placa || '', department: p.departamento || '', origin: 'cadastro' }),
           sublabel: existing.sublabel,
         });
       }
@@ -301,13 +303,13 @@ export default function RegistroModal({
       if (p.rgCpf) {
         if (!map.has(p.rgCpf)) {
           map.set(p.rgCpf, {
-            data: { name: p.nome, company: p.empresa || '', doc: p.rgCpf, plate: p.placa || '', department: p.departamento || '' },
+            data: { name: p.nome, company: p.empresa || '', doc: p.rgCpf, plate: p.placa || '', department: p.departamento || '', origin: 'cadastro' },
             sublabel: p.nome,
           });
         } else {
           const existing = map.get(p.rgCpf)!;
           map.set(p.rgCpf, {
-            data: mergeUnified(existing.data, { name: p.nome, company: p.empresa || '', doc: p.rgCpf, plate: p.placa || '', department: p.departamento || '' }),
+            data: mergeUnified(existing.data, { name: p.nome, company: p.empresa || '', doc: p.rgCpf, plate: p.placa || '', department: p.departamento || '', origin: 'cadastro' }),
             sublabel: existing.sublabel,
           });
         }
@@ -517,6 +519,7 @@ export default function RegistroModal({
           pesoEntrada: Number(formData.pesoEntrada) || 0,
           horarioSaida: '',
           pesoSaida: 0,
+          porteiroEntrada: user?.nome || '',
         };
         break;
       case 'entregas2':
@@ -649,40 +652,50 @@ export default function RegistroModal({
           <>
             <div className="space-y-2">
               <Label>Nome *</Label>
-              <AutocompleteInput
+              <SearchInput
                 value={formData.nome || ''}
                 onChange={(v) => updateField('nome', v)}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
+                onSelect={handleAutoSelect}
                 suggestions={nameSuggestions}
                 placeholder="Nome completo"
               />
             </div>
             <div className="space-y-2">
               <Label>Empresa *</Label>
-              <AutocompleteInput
+              <SearchInput
                 value={formData.empresa || ''}
                 onChange={(v) => updateField('empresa', v)}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
+                onSelect={handleAutoSelect}
                 suggestions={empresaSuggestions}
                 placeholder="Selecione ou digite a empresa"
               />
             </div>
             <div className="space-y-2">
               <Label>Departamento *</Label>
-              <AutocompleteInput
+              <Select
                 value={formData.departamento || ''}
-                onChange={(v) => updateField('departamento', v)}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
-                suggestions={departamentoSuggestions}
-                placeholder="Selecione ou digite o departamento"
-              />
+                onValueChange={(v) => updateField('departamento', v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o departamento" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[...departamentos]
+                    .sort((a, b) => a.nome.localeCompare(b.nome))
+                    .map((d) => (
+                      <SelectItem key={d.id || d.nome} value={d.nome}>
+                        {d.nome}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>RG/CPF</Label>
-              <AutocompleteInput
+              <SearchInput
                 value={formData.rgCpf || ''}
                 onChange={(v) => updateField('rgCpf', v)}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
+                onSelect={handleAutoSelect}
                 suggestions={rgCpfSuggestions}
                 placeholder="00.000.000-0"
               />
@@ -702,40 +715,50 @@ export default function RegistroModal({
           <>
             <div className="space-y-2">
               <Label>Nome *</Label>
-              <AutocompleteInput
+              <SearchInput
                 value={formData.nome || ''}
                 onChange={(v) => updateField('nome', v)}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
+                onSelect={handleAutoSelect}
                 suggestions={nameSuggestions}
                 placeholder="Nome completo"
               />
             </div>
             <div className="space-y-2">
               <Label>Empresa *</Label>
-              <AutocompleteInput
+              <SearchInput
                 value={formData.empresa || ''}
                 onChange={(v) => updateField('empresa', v)}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
+                onSelect={handleAutoSelect}
                 suggestions={empresaSuggestions}
                 placeholder="Selecione ou digite a empresa"
               />
             </div>
             <div className="space-y-2">
               <Label>Departamento *</Label>
-              <AutocompleteInput
+              <Select
                 value={formData.departamento || ''}
-                onChange={(v) => updateField('departamento', v)}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
-                suggestions={departamentoSuggestions}
-                placeholder="Selecione ou digite o departamento"
-              />
+                onValueChange={(v) => updateField('departamento', v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o departamento" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[...departamentos]
+                    .sort((a, b) => a.nome.localeCompare(b.nome))
+                    .map((d) => (
+                      <SelectItem key={d.id || d.nome} value={d.nome}>
+                        {d.nome}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>RG/CPF</Label>
-              <AutocompleteInput
+              <SearchInput
                 value={formData.rgCpf || ''}
                 onChange={(v) => updateField('rgCpf', v)}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
+                onSelect={handleAutoSelect}
                 suggestions={rgCpfSuggestions}
                 placeholder="00.000.000-0"
               />
@@ -759,10 +782,10 @@ export default function RegistroModal({
             </div>
             <div className="space-y-2">
               <Label>Empresa *</Label>
-              <AutocompleteInput
+              <SearchInput
                 value={formData.empresa || ''}
                 onChange={(v) => updateField('empresa', v)}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
+                onSelect={handleAutoSelect}
                 suggestions={empresaSuggestions}
                 placeholder="Selecione ou digite a empresa"
               />
@@ -779,10 +802,10 @@ export default function RegistroModal({
             </div>
             <div className="space-y-2">
               <Label>Motorista *</Label>
-              <AutocompleteInput
+              <SearchInput
                 value={formData.motorista || ''}
                 onChange={(v) => updateField('motorista', v)}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
+                onSelect={handleAutoSelect}
                 suggestions={nameSuggestions}
                 placeholder="Nome do motorista"
               />
@@ -815,43 +838,53 @@ export default function RegistroModal({
             </div>
             <div className="space-y-2">
               <Label>Motorista *</Label>
-              <AutocompleteInput
+              <SearchInput
                 value={formData.motorista || ''}
                 onChange={(v) => updateField('motorista', v)}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
+                onSelect={handleAutoSelect}
                 suggestions={nameSuggestions}
                 placeholder="Nome do motorista"
               />
             </div>
             <div className="space-y-2">
               <Label>CPF/RG</Label>
-              <AutocompleteInput
+              <SearchInput
                 value={formData.cpfRg || ''}
                 onChange={(v) => updateField('cpfRg', v)}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
+                onSelect={handleAutoSelect}
                 suggestions={rgCpfSuggestions}
                 placeholder="00.000.000-0"
               />
             </div>
             <div className="space-y-2">
               <Label>Empresa *</Label>
-              <AutocompleteInput
+              <SearchInput
                 value={formData.empresa || ''}
                 onChange={(v) => updateField('empresa', v)}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
+                onSelect={handleAutoSelect}
                 suggestions={empresaSuggestions}
                 placeholder="Selecione ou digite a empresa"
               />
             </div>
             <div className="space-y-2">
               <Label>Departamento</Label>
-              <AutocompleteInput
+              <Select
                 value={formData.departamento || ''}
-                onChange={(v) => updateField('departamento', v)}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
-                suggestions={departamentoSuggestions}
-                placeholder="Selecione ou digite o departamento"
-              />
+                onValueChange={(v) => updateField('departamento', v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o departamento" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[...departamentos]
+                    .sort((a, b) => a.nome.localeCompare(b.nome))
+                    .map((d) => (
+                      <SelectItem key={d.id || d.nome} value={d.nome}>
+                        {d.nome}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
             </div>
           </>
         );
@@ -860,10 +893,10 @@ export default function RegistroModal({
           <>
             <div className="space-y-2">
               <Label>RG/CPF</Label>
-              <AutocompleteInput
+              <SearchInput
                 value={formData.rgCpf || ''}
                 onChange={(v) => updateField('rgCpf', v)}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
+                onSelect={handleAutoSelect}
                 suggestions={rgCpfSuggestions}
                 placeholder="00.000.000-0"
               />
@@ -884,20 +917,20 @@ export default function RegistroModal({
             </div>
             <div className="space-y-2">
               <Label>Empresa *</Label>
-              <AutocompleteInput
+              <SearchInput
                 value={formData.empresa || ''}
                 onChange={(v) => updateField('empresa', v)}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
+                onSelect={handleAutoSelect}
                 suggestions={empresaSuggestions}
                 placeholder="Selecione ou digite a empresa"
               />
             </div>
             <div className="space-y-2">
               <Label>Motorista *</Label>
-              <AutocompleteInput
+              <SearchInput
                 value={formData.motorista || ''}
                 onChange={(v) => updateField('motorista', v)}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
+                onSelect={handleAutoSelect}
                 suggestions={nameSuggestions}
                 placeholder="Nome do motorista"
               />
@@ -913,20 +946,20 @@ export default function RegistroModal({
           <>
             <div className="space-y-2">
               <Label>Nome do Colaborador *</Label>
-              <AutocompleteInput
+              <SearchInput
                 value={formData.nomeColaborador || ''}
                 onChange={(v) => updateField('nomeColaborador', v)}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
+                onSelect={handleAutoSelect}
                 suggestions={nameSuggestions}
                 placeholder="Nome completo do colaborador"
               />
             </div>
             <div className="space-y-2">
               <Label>RG/CPF</Label>
-              <AutocompleteInput
+              <SearchInput
                 value={formData.rgCpf || ''}
                 onChange={(v) => updateField('rgCpf', v)}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
+                onSelect={handleAutoSelect}
                 suggestions={rgCpfSuggestions}
                 placeholder="00.000.000-0"
               />
@@ -937,10 +970,10 @@ export default function RegistroModal({
             </div>
             <div className="space-y-2">
               <Label>Autorizado Por</Label>
-              <AutocompleteInput
+              <SearchInput
                 value={formData.autorizadoPor || ''}
                 onChange={(v) => updateField('autorizadoPor', v)}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
+                onSelect={handleAutoSelect}
                 suggestions={nameSuggestions}
                 placeholder="Nome de quem autorizou"
               />
@@ -972,20 +1005,20 @@ export default function RegistroModal({
           <>
             <div className="space-y-2">
               <Label>Destinatário *</Label>
-              <AutocompleteInput
+              <SearchInput
                 value={formData.destinatario || ''}
                 onChange={(v) => updateField('destinatario', v)}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
+                onSelect={handleAutoSelect}
                 suggestions={nameSuggestions}
                 placeholder="Nome de quem vai receber"
               />
             </div>
             <div className="space-y-2">
               <Label>Remetente</Label>
-              <AutocompleteInput
+              <SearchInput
                 value={formData.remetente || ''}
                 onChange={(v) => updateField('remetente', v)}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
+                onSelect={handleAutoSelect}
                 suggestions={empresaSuggestions}
                 placeholder="Quem enviou a correspondência"
               />
@@ -1011,13 +1044,23 @@ export default function RegistroModal({
             </div>
             <div className="space-y-2">
               <Label>Departamento</Label>
-              <AutocompleteInput
+              <Select
                 value={formData.departamento || ''}
-                onChange={(v) => updateField('departamento', v)}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
-                suggestions={departamentoSuggestions}
-                placeholder="Selecione ou digite o departamento"
-              />
+                onValueChange={(v) => updateField('departamento', v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecione o departamento" />
+                </SelectTrigger>
+                <SelectContent>
+                  {[...departamentos]
+                    .sort((a, b) => a.nome.localeCompare(b.nome))
+                    .map((d) => (
+                      <SelectItem key={d.id || d.nome} value={d.nome}>
+                        {d.nome}
+                      </SelectItem>
+                    ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="space-y-2">
               <Label>Horário Entrada</Label>

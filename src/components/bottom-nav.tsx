@@ -23,6 +23,7 @@ import {
   Eye,
   Siren,
   Building2,
+  Building,
 } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import type { PageType } from '@/lib/data';
@@ -57,6 +58,7 @@ const SECONDARY_NAV: NavItem[] = [
   { page: 'veiculos', label: 'Veículos', icon: Car },
   { page: 'pre-autorizacao', label: 'Pré-Autorização', icon: UserCheck },
   { page: 'departamentos', label: 'Departamentos', icon: Building2 },
+  { page: 'empresas', label: 'Empresas', icon: Building },
   { page: 'relatorios', label: 'Relatórios', icon: FileText },
   { page: 'ramais', label: 'Ramais', icon: Phone },
   { page: 'avisos', label: 'Avisos', icon: Bell },

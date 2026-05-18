@@ -15,7 +15,6 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { useAppStore } from '@/lib/store';
-import { OPCOES_DEPARTAMENTOS } from '@/lib/data';
 import {
   Select,
   SelectContent,
@@ -32,11 +31,10 @@ export default function RamaisPage() {
   const [pessoaNome, setPessoaNome] = useState('');
   const [ramalNumero, setRamalNumero] = useState('');
 
-  // Merge store departments with static options for completeness
+  // Use only real departments from Firestore
   const allDepartamentos = useMemo(() => {
-    const storeDeps = departamentos.map((d) => d.nome);
-    const all = new Set([...storeDeps, ...OPCOES_DEPARTAMENTOS]);
-    return Array.from(all).sort();
+    const storeDeps = departamentos.map((d) => d.nome).filter(Boolean);
+    return Array.from(new Set(storeDeps)).sort((a, b) => a.localeCompare(b));
   }, [departamentos]);
 
   const filteredRamais = useMemo(() => {

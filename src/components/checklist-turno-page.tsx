@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { format } from 'date-fns';
 import {
@@ -47,9 +47,45 @@ const statusIcons: Record<StatusChecklist, React.ElementType> = {
 };
 
 export default function ChecklistTurnoPage() {
-  const { checklists, addChecklist, updateChecklist, removeChecklist, user } = useAppStore();
+  const { checklists, addChecklist, updateChecklist, removeChecklist, user, logout } = useAppStore();
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('todos');
+
+  // Rascunhos em localStorage
+  const [rascunhos, setRascunhos] = useState<ChecklistTurno[]>([]);
+  useEffect(() => {
+    const stored = localStorage.getItem('apex_porter_rascunhos_plantao');
+    if (stored) {
+      try { setRascunhos(JSON.parse(stored)); } catch {}
+    }
+  }, []);
+
+  const saveRascunhosLS = (list: ChecklistTurno[]) => {
+    setRascunhos(list);
+    localStorage.setItem('apex_porter_rascunhos_plantao', JSON.stringify(list));
+  };
+
+  // Merge rascunhos and store checklists with strict deduplication
+  const allChecklists = useMemo(() => {
+    const seen = new Set<string>();
+    const result: ChecklistTurno[] = [];
+
+    for (const r of rascunhos) {
+      if (!seen.has(r.id)) {
+        seen.add(r.id);
+        result.push(r);
+      }
+    }
+
+    for (const ck of checklists) {
+      if (!seen.has(ck.id)) {
+        seen.add(ck.id);
+        result.push(ck);
+      }
+    }
+
+    return result;
+  }, [rascunhos, checklists]);
 
   // New checklist dialog
   const [newDialogOpen, setNewDialogOpen] = useState(false);
@@ -67,18 +103,18 @@ export default function ChecklistTurnoPage() {
 
   // Stats
   const stats = useMemo(() => ({
-    total: checklists.length,
-    pendentes: checklists.filter(c => c.status === 'pendente').length,
-    concluidas: checklists.filter(c => c.status === 'concluido').length,
-  }), [checklists]);
+    total: allChecklists.length,
+    pendentes: allChecklists.filter(c => c.status === 'pendente').length,
+    concluidas: allChecklists.filter(c => c.status === 'concluido').length,
+  }), [allChecklists]);
 
   // Filtered list
   const filtered = useMemo(() => {
-    return checklists.filter(ck => {
+    return allChecklists.filter(ck => {
       if (statusFilter !== 'todos' && ck.status !== statusFilter) return false;
       return true;
     });
-  }, [checklists, statusFilter]);
+  }, [allChecklists, statusFilter]);
 
   // Helper: count checked items
   const countChecked = (itens: ItemChecklist[]) => itens.filter(i => i.checked).length;
@@ -90,7 +126,18 @@ export default function ChecklistTurnoPage() {
     setNewDialogOpen(true);
   };
 
-  // Create new checklist
+  // Open detail dialog
+  const handleOpenDetail = (ck: ChecklistTurno) => {
+    setSelected(ck);
+    setEditItens(ck.itens.map(i => ({ ...i })));
+    setEditOcorrencias(ck.ocorrenciasRepassadas);
+    setEditCorrespondencias(ck.correspondenciasPendentes);
+    setEditChaves(ck.chavesPendentes);
+    setEditObsGerais(ck.observacoesGerais);
+    setDetailOpen(true);
+  };
+
+  // Create new checklist draft
   const handleCreate = () => {
     if (!porteiroSaindo.trim()) {
       toast.error('Informe o nome do porteiro que está saindo');
@@ -123,20 +170,12 @@ export default function ChecklistTurnoPage() {
       status: 'pendente',
     };
 
-    addChecklist(newChecklist);
-    toast.success('Passagem de plantão criada!');
-    setNewDialogOpen(false);
-  };
+    const updatedRascunhos = [newChecklist, ...rascunhos];
+    saveRascunhosLS(updatedRascunhos);
 
-  // Open detail dialog
-  const handleOpenDetail = (ck: ChecklistTurno) => {
-    setSelected(ck);
-    setEditItens(ck.itens.map(i => ({ ...i })));
-    setEditOcorrencias(ck.ocorrenciasRepassadas);
-    setEditCorrespondencias(ck.correspondenciasPendentes);
-    setEditChaves(ck.chavesPendentes);
-    setEditObsGerais(ck.observacoesGerais);
-    setDetailOpen(true);
+    toast.success('Rascunho da passagem iniciado!');
+    setNewDialogOpen(false);
+    handleOpenDetail(newChecklist);
   };
 
   // Toggle item check
@@ -153,8 +192,8 @@ export default function ChecklistTurnoPage() {
     ));
   };
 
-  // Save changes (for pendente status)
-  const handleSaveChanges = () => {
+  // Save draft locally
+  const handleSalvarRascunho = () => {
     if (!selected) return;
     const updated: ChecklistTurno = {
       ...selected,
@@ -164,9 +203,15 @@ export default function ChecklistTurnoPage() {
       chavesPendentes: editChaves,
       observacoesGerais: editObsGerais,
     };
-    updateChecklist(updated);
+
+    const updatedList = rascunhos.map(r => r.id === updated.id ? updated : r);
+    if (!rascunhos.some(r => r.id === updated.id)) {
+      updatedList.unshift(updated);
+    }
+    saveRascunhosLS(updatedList);
     setSelected(updated);
-    toast.success('Alterações salvas!');
+    toast.success('Rascunho salvo localmente!');
+    setDetailOpen(false);
   };
 
   // Concluir passagem
@@ -188,16 +233,28 @@ export default function ChecklistTurnoPage() {
       observacoesGerais: editObsGerais,
       status: 'concluido',
     };
-    updateChecklist(updated);
+
+    addChecklist(updated);
+
+    const remainingRascunhos = rascunhos.filter(r => r.id !== updated.id);
+    saveRascunhosLS(remainingRascunhos);
+
     setSelected(updated);
-    toast.success('Passagem de plantão concluída!');
+    toast.success('Passagem de plantão concluída! Encerrando sessão...');
     setDetailOpen(false);
+    logout();
   };
 
   // Delete
   const handleDelete = (id: string) => {
-    removeChecklist(id);
-    toast.success('Passagem removida');
+    if (rascunhos.some(r => r.id === id)) {
+      const remaining = rascunhos.filter(r => r.id !== id);
+      saveRascunhosLS(remaining);
+      toast.success('Rascunho removido');
+    } else {
+      removeChecklist(id);
+      toast.success('Passagem removida');
+    }
     if (selected?.id === id) {
       setDetailOpen(false);
       setSelected(null);
@@ -603,11 +660,11 @@ export default function ChecklistTurnoPage() {
                   </Button>
                   <Button
                     variant="outline"
-                    onClick={handleSaveChanges}
+                    onClick={handleSalvarRascunho}
                     className="w-full h-10 font-medium"
                   >
                     <Save className="h-4 w-4 mr-2" />
-                    Salvar Alterações
+                    Salvar Rascunho
                   </Button>
                 </div>
               )}

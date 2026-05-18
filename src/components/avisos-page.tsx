@@ -76,19 +76,14 @@ const prioridadeConfig = {
 };
 
 const turnoConfig: Record<string, { icon: typeof Sunrise; label: string; badge: string }> = {
-  manha: {
-    icon: Sunrise,
-    label: 'Manhã',
+  diurno: {
+    icon: Sun,
+    label: 'Diurno',
     badge: 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
   },
-  tarde: {
-    icon: Sun,
-    label: 'Tarde',
-    badge: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
-  },
-  noite: {
+  noturno: {
     icon: Moon,
-    label: 'Noite',
+    label: 'Noturno',
     badge: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
   },
   todos: {
@@ -337,9 +332,8 @@ export default function AvisosPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="todos_turnos">Todos os Turnos</SelectItem>
-                <SelectItem value="manha">Manhã</SelectItem>
-                <SelectItem value="tarde">Tarde</SelectItem>
-                <SelectItem value="noite">Noite</SelectItem>
+                <SelectItem value="diurno">Diurno</SelectItem>
+                <SelectItem value="noturno">Noturno</SelectItem>
                 <SelectItem value="todos">Geral</SelectItem>
               </SelectContent>
             </Select>
@@ -594,9 +588,8 @@ export default function AvisosPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="todos">Todos os Turnos</SelectItem>
-                  <SelectItem value="manha">Manhã</SelectItem>
-                  <SelectItem value="tarde">Tarde</SelectItem>
-                  <SelectItem value="noite">Noite</SelectItem>
+                  <SelectItem value="diurno">Diurno</SelectItem>
+                  <SelectItem value="noturno">Noturno</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -1,6 +1,10 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { format } from 'date-fns';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { motion } from 'framer-motion';
 import {
   BarChart,
@@ -38,14 +42,11 @@ import {
   CalendarCheck,
   Users,
   FileCheck,
+  Filter,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAppStore } from '@/lib/store';
 import {
-  DADOS_GRAFICO_BARRAS,
-  DADOS_GRAFICO_LINHA,
-  DADOS_GRAFICO_PIZZA,
-  DADOS_GRAFICO_AREA,
   CATEGORIAS_FLUXO,
   TIPOS_OCORRENCIA,
   GRAVIDADES_OCORRENCIA,
@@ -277,18 +278,108 @@ export default function DashboardPage() {
     protocolos,
   } = useAppStore();
 
+  type DateRange = 'hoje' | 'semana' | 'mes' | 'ano' | 'personalizado';
+  const [dateRange, setDateRange] = useState<DateRange>('hoje');
+  const [dataInicio, setDataInicio] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [dataFim, setDataFim] = useState(format(new Date(), 'yyyy-MM-dd'));
+
+  const { inicio, fim } = useMemo(() => {
+    const hoje = new Date();
+    let start: Date, end: Date;
+    switch (dateRange) {
+      case 'hoje': {
+        start = new Date(hoje);
+        start.setHours(0, 0, 0, 0);
+        end = new Date(hoje);
+        end.setHours(23, 59, 59, 999);
+        break;
+      }
+      case 'semana': {
+        start = new Date(hoje);
+        start.setDate(start.getDate() - 7);
+        start.setHours(0, 0, 0, 0);
+        end = new Date(hoje);
+        end.setHours(23, 59, 59, 999);
+        break;
+      }
+      case 'mes': {
+        start = new Date(hoje);
+        start.setDate(start.getDate() - 30);
+        start.setHours(0, 0, 0, 0);
+        end = new Date(hoje);
+        end.setHours(23, 59, 59, 999);
+        break;
+      }
+      case 'ano': {
+        start = new Date(hoje.getFullYear(), 0, 1, 0, 0, 0, 0);
+        end = new Date(hoje.getFullYear(), 11, 31, 23, 59, 59, 999);
+        break;
+      }
+      case 'personalizado': {
+        start = new Date(dataInicio + 'T00:00:00');
+        if (isNaN(start.getTime())) start = new Date(0);
+        end = new Date(dataFim + 'T23:59:59');
+        if (isNaN(end.getTime())) end = new Date(hoje);
+        break;
+      }
+      default: {
+        start = new Date(hoje);
+        start.setHours(0, 0, 0, 0);
+        end = new Date(hoje);
+        end.setHours(23, 59, 59, 999);
+      }
+    }
+    return { inicio: start, fim: end };
+  }, [dateRange, dataInicio, dataFim]);
+
+  const isDateInRange = useMemo(() => {
+    return (dateStr: string | undefined): boolean => {
+      if (!dateStr) return false;
+      let d: Date;
+      if (dateStr.includes('/')) {
+        const parts = dateStr.split('/');
+        if (parts.length === 3) {
+          d = new Date(parseInt(parts[2], 10), parseInt(parts[1], 10) - 1, parseInt(parts[0], 10));
+        } else {
+          return false;
+        }
+      } else if (dateStr.includes('-')) {
+        const parts = dateStr.split('-');
+        if (parts.length >= 3) {
+          d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+        } else {
+          return false;
+        }
+      } else {
+        d = new Date(dateStr);
+      }
+      if (isNaN(d.getTime())) return false;
+      return d.getTime() >= inicio.getTime() && d.getTime() <= fim.getTime();
+    };
+  }, [inicio, fim]);
+
+  const registrosFluxoFiltered = useMemo(() => registrosFluxo.filter(r => isDateInRange('data' in r ? (r as any).data : '')), [registrosFluxo, isDateInRange]);
+  const veiculosFiltered = useMemo(() => veiculos.filter(v => isDateInRange(v.data)), [veiculos, isDateInRange]);
+  const ocorrenciasFiltered = useMemo(() => ocorrencias.filter(o => isDateInRange(o.data)), [ocorrencias, isDateInRange]);
+  const listaNegraFiltered = useMemo(() => listaNegra.filter(l => isDateInRange(l.data)), [listaNegra, isDateInRange]);
+  const achadosFiltered = useMemo(() => achadosPerdidos.filter(a => isDateInRange(a.data)), [achadosPerdidos, isDateInRange]);
+  const preAuthFiltered = useMemo(() => preAutorizacoes.filter(p => isDateInRange(p.dataPrevista)), [preAutorizacoes, isDateInRange]);
+  const checklistsFiltered = useMemo(() => checklists.filter(c => isDateInRange(c.data)), [checklists, isDateInRange]);
+  const inspecoesFiltered = useMemo(() => inspecoes.filter(i => isDateInRange(i.data)), [inspecoes, isDateInRange]);
+  const avisosFiltered = useMemo(() => avisos.filter(a => isDateInRange(a.data)), [avisos, isDateInRange]);
+
   // ── Computed KPIs ──
   const kpis = useMemo(() => {
-    const fluxoAbertos = registrosFluxo.filter((r) => !r.horarioSaida).length;
-    const fluxoFechados = registrosFluxo.filter((r) => !!r.horarioSaida).length;
-    const veiculosEstacionados = veiculos.filter((v) => !v.horarioSaida).length;
-    const ocorrenciasAbertas = ocorrencias.filter((o) => o.status === 'aberta' || o.status === 'em_andamento').length;
-    const listaNegraAtiva = listaNegra.filter((l) => l.status === 'ativo').length;
-    const achadosNaoDevolvidos = achadosPerdidos.filter((a) => a.status !== 'devolvido').length;
-    const preAuthPendentes = preAutorizacoes.filter((p) => p.status === 'agendado' || p.status === 'confirmado').length;
+    const fluxoAbertos = registrosFluxoFiltered.filter((r) => !r.horarioSaida).length;
+    const fluxoFechados = registrosFluxoFiltered.filter((r) => !!r.horarioSaida).length;
+    const veiculosEstacionados = veiculosFiltered.filter((v) => !v.horarioSaida).length;
+    const ocorrenciasAbertas = ocorrenciasFiltered.filter((o) => o.status === 'aberta' || o.status === 'em_andamento').length;
+    const listaNegraAtiva = listaNegraFiltered.filter((l) => l.status === 'ativo').length;
+    const achadosNaoDevolvidos = achadosFiltered.filter((a) => a.status !== 'devolvido').length;
+    const preAuthPendentes = preAuthFiltered.filter((p) => p.status === 'agendado' || p.status === 'confirmado').length;
     const pessoasCadastradas = pessoas.length;
-    const checklistsPendentes = checklists.filter((c) => c.status === 'pendente').length;
-    const avisosAtivos = avisos.filter((a) => a.fixado).length;
+    const checklistsPendentes = checklistsFiltered.filter((c) => c.status === 'pendente').length;
+    const avisosAtivos = avisosFiltered.filter((a) => a.fixado).length;
 
     return [
       {
@@ -348,7 +439,105 @@ export default function DashboardPage() {
         bg: 'bg-indigo-50 dark:bg-indigo-950/30',
       },
     ];
-  }, [registrosFluxo, veiculos, ocorrencias, listaNegra, achadosPerdidos, preAutorizacoes, pessoas, avisos, checklists]);
+  }, [registrosFluxoFiltered, veiculosFiltered, ocorrenciasFiltered, listaNegraFiltered, achadosFiltered, preAuthFiltered, pessoas, avisosFiltered, checklistsFiltered]);
+
+  // ── Real Data for Charts ──
+  const entradasSaidasPorHora = useMemo(() => {
+    const hours = Array.from({ length: 24 }, (_, i) => `${i.toString().padStart(2, '0')}:00`);
+    const data = hours.map(h => ({ hora: h, entradas: 0, saidas: 0 }));
+    
+    registrosFluxoFiltered.forEach(r => {
+      if (r.horarioEntrada) {
+        const h = r.horarioEntrada.split(':')[0] + ':00';
+        const entry = data.find(d => d.hora === h);
+        if (entry) entry.entradas++;
+      }
+      if ('horarioSaida' in r && (r as any).horarioSaida) {
+        const h = (r as any).horarioSaida.split(':')[0] + ':00';
+        const entry = data.find(d => d.hora === h);
+        if (entry) entry.saidas++;
+      }
+    });
+    
+    const firstActiveIndex = data.findIndex(d => d.entradas > 0 || d.saidas > 0);
+    const lastActiveIndex = data.findLastIndex(d => d.entradas > 0 || d.saidas > 0);
+    
+    if (firstActiveIndex === -1) return data.slice(6, 18);
+    
+    const start = Math.max(0, firstActiveIndex - 1);
+    const end = Math.min(23, lastActiveIndex + 1);
+    
+    return data.slice(start, end + 1);
+  }, [registrosFluxoFiltered]);
+
+  const tendenciaSemanal = useMemo(() => {
+    const dataMap: Record<string, any> = {};
+    const refDate = new Date(fim);
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date(refDate);
+      d.setDate(d.getDate() - i);
+      const dataStr = d.toLocaleDateString('pt-BR');
+      const diaSemana = d.toLocaleDateString('pt-BR', { weekday: 'short' });
+      dataMap[dataStr] = 0;
+      dataMap[`${dataStr}_label`] = diaSemana;
+    }
+    
+    registrosFluxo.forEach(r => {
+      const data = 'data' in r ? (r as any).data : '';
+      if (data && dataMap[data] !== undefined) {
+        dataMap[data]++;
+      }
+    });
+    
+    return Object.keys(dataMap)
+      .filter(k => !k.includes('_label'))
+      .map(k => ({
+        dia: dataMap[`${k}_label`],
+        data: k,
+        movimentacoes: dataMap[k]
+      }));
+  }, [registrosFluxo, fim]);
+
+  const fluxoPorPeriodo = useMemo(() => {
+    const counts: Record<string, number> = {
+      'Madrugada (00h-06h)': 0,
+      'Manhã (06h-12h)': 0,
+      'Tarde (12h-18h)': 0,
+      'Noite (18h-00h)': 0,
+    };
+    registrosFluxoFiltered.forEach(r => {
+      if (r.horarioEntrada) {
+        const hour = parseInt(r.horarioEntrada.split(':')[0], 10);
+        if (hour >= 6 && hour < 12) counts['Manhã (06h-12h)']++;
+        else if (hour >= 12 && hour < 18) counts['Tarde (12h-18h)']++;
+        else if (hour >= 18 && hour <= 23) counts['Noite (18h-00h)']++;
+        else counts['Madrugada (00h-06h)']++;
+      }
+    });
+    return Object.entries(counts).map(([periodo, fluxo]) => ({ periodo, fluxo }));
+  }, [registrosFluxoFiltered]);
+
+  const checklistsPorStatus = useMemo(() => {
+    const colors: Record<string, string> = {
+      pendente: '#ef4444',
+      em_andamento: '#f59e0b',
+      concluido: '#10b981',
+    };
+    const labels: Record<string, string> = {
+      pendente: 'Pendente',
+      em_andamento: 'Em Andamento',
+      concluido: 'Concluído',
+    };
+    const counts: Record<string, number> = {};
+    checklistsFiltered.forEach((c) => {
+      counts[c.status] = (counts[c.status] || 0) + 1;
+    });
+    return Object.entries(counts).map(([status, qtd]) => ({
+      name: labels[status] || status,
+      value: qtd,
+      fill: colors[status] || '#6b7280',
+    }));
+  }, [checklistsFiltered]);
 
   // ── Fluxo por categoria (from real data) ──
   const fluxoPorCategoria = useMemo(() => {
@@ -356,7 +545,7 @@ export default function DashboardPage() {
     CATEGORIAS_FLUXO.forEach((c) => {
       counts[c.value] = { abertos: 0, fechados: 0 };
     });
-    registrosFluxo.forEach((r) => {
+    registrosFluxoFiltered.forEach((r) => {
       const cat = r.categoria;
       if (!counts[cat]) counts[cat] = { abertos: 0, fechados: 0 };
       if (r.horarioSaida) {
@@ -370,20 +559,20 @@ export default function DashboardPage() {
       Abertos: counts[c.value]?.abertos || 0,
       Finalizados: counts[c.value]?.fechados || 0,
     }));
-  }, [registrosFluxo]);
+  }, [registrosFluxoFiltered]);
 
   // ── Ocorrências por tipo ──
   const ocorrenciasPorTipo = useMemo(() => {
     const counts: Record<string, number> = {};
     TIPOS_OCORRENCIA.forEach((t) => { counts[t.value] = 0; });
-    ocorrencias.forEach((o) => {
+    ocorrenciasFiltered.forEach((o) => {
       counts[o.tipo] = (counts[o.tipo] || 0) + 1;
     });
     return TIPOS_OCORRENCIA.map((t) => ({
       tipo: t.label,
       qtd: counts[t.value] || 0,
     })).filter((d) => d.qtd > 0);
-  }, [ocorrencias]);
+  }, [ocorrenciasFiltered]);
 
   // ── Ocorrências por gravidade ──
   const ocorrenciasPorGravidade = useMemo(() => {
@@ -395,7 +584,7 @@ export default function DashboardPage() {
     };
     const counts: Record<string, number> = {};
     GRAVIDADES_OCORRENCIA.forEach((g) => { counts[g.value] = 0; });
-    ocorrencias.forEach((o) => {
+    ocorrenciasFiltered.forEach((o) => {
       counts[o.gravidade] = (counts[o.gravidade] || 0) + 1;
     });
     return GRAVIDADES_OCORRENCIA.map((g) => ({
@@ -403,7 +592,7 @@ export default function DashboardPage() {
       value: counts[g.value] || 0,
       fill: colors[g.value],
     })).filter((d) => d.value > 0);
-  }, [ocorrencias]);
+  }, [ocorrenciasFiltered]);
 
   // ── Veículos por tipo ──
   const veiculosPorTipo = useMemo(() => {
@@ -414,7 +603,7 @@ export default function DashboardPage() {
       Colaborador: '#3b82f6',
     };
     const counts: Record<string, number> = {};
-    veiculos.forEach((v) => {
+    veiculosFiltered.forEach((v) => {
       counts[v.tipo] = (counts[v.tipo] || 0) + 1;
     });
     return Object.entries(counts).map(([tipo, qtd]) => ({
@@ -422,7 +611,7 @@ export default function DashboardPage() {
       value: qtd,
       fill: colors[tipo] || '#6b7280',
     }));
-  }, [veiculos]);
+  }, [veiculosFiltered]);
 
   // ── Pessoas por tipo ──
   const pessoasPorTipo = useMemo(() => {
@@ -461,7 +650,7 @@ export default function DashboardPage() {
       expirado: 'Expirado',
     };
     const counts: Record<string, number> = {};
-    preAutorizacoes.forEach((p) => {
+    preAuthFiltered.forEach((p) => {
       counts[p.status] = (counts[p.status] || 0) + 1;
     });
     return Object.entries(counts).map(([status, qtd]) => ({
@@ -469,7 +658,7 @@ export default function DashboardPage() {
       value: qtd,
       fill: colors[status] || '#6b7280',
     }));
-  }, [preAutorizacoes]);
+  }, [preAuthFiltered]);
 
   // ── Achados e perdidos por status ──
   const achadosPorStatus = useMemo(() => {
@@ -484,7 +673,7 @@ export default function DashboardPage() {
       devolvido: 'Devolvido',
     };
     const counts: Record<string, number> = {};
-    achadosPerdidos.forEach((a) => {
+    achadosFiltered.forEach((a) => {
       counts[a.status] = (counts[a.status] || 0) + 1;
     });
     return Object.entries(counts).map(([status, qtd]) => ({
@@ -492,7 +681,7 @@ export default function DashboardPage() {
       value: qtd,
       fill: colors[status] || '#6b7280',
     }));
-  }, [achadosPerdidos]);
+  }, [achadosFiltered]);
 
   // ── Ocorrências por status ──
   const ocorrenciasPorStatus = useMemo(() => {
@@ -509,7 +698,7 @@ export default function DashboardPage() {
       encaminhada: 'Encaminhada',
     };
     const counts: Record<string, number> = {};
-    ocorrencias.forEach((o) => {
+    ocorrenciasFiltered.forEach((o) => {
       counts[o.status] = (counts[o.status] || 0) + 1;
     });
     return Object.entries(counts).map(([status, qtd]) => ({
@@ -517,12 +706,12 @@ export default function DashboardPage() {
       value: qtd,
       fill: colors[status] || '#6b7280',
     }));
-  }, [ocorrencias]);
+  }, [ocorrenciasFiltered]);
 
   // ── Empresas mais frequentes (top 5) ──
   const empresasMaisFrequentes = useMemo(() => {
     const counts: Record<string, number> = {};
-    registrosFluxo.forEach((r) => {
+    registrosFluxoFiltered.forEach((r) => {
       let empresa = '';
       if ('empresa' in r) empresa = (r as any).empresa;
       if ('nomeEmpresa' in r) empresa = (r as any).nomeEmpresa;
@@ -539,7 +728,7 @@ export default function DashboardPage() {
         empresa: empresa.length > 20 ? empresa.slice(0, 20) + '…' : empresa,
         registros: qtd,
       }));
-  }, [registrosFluxo]);
+  }, [registrosFluxoFiltered]);
 
   // ── Inspeções por status ──
   const inspecoesPorStatus = useMemo(() => {
@@ -554,7 +743,7 @@ export default function DashboardPage() {
       aprovada: 'Aprovada',
     };
     const counts: Record<string, number> = {};
-    inspecoes.forEach((i) => {
+    inspecoesFiltered.forEach((i) => {
       counts[i.status] = (counts[i.status] || 0) + 1;
     });
     return Object.entries(counts).map(([status, qtd]) => ({
@@ -562,7 +751,7 @@ export default function DashboardPage() {
       value: qtd,
       fill: colors[status] || '#6b7280',
     }));
-  }, [inspecoes]);
+  }, [inspecoesFiltered]);
 
   return (
     <motion.div
@@ -571,9 +760,50 @@ export default function DashboardPage() {
       animate="show"
       className="space-y-4 p-4 md:p-6 pb-28"
     >
-      <div>
-        <h2 className="text-xl font-bold">Dashboard</h2>
-        <p className="text-sm text-muted-foreground">Visão geral completa do sistema</p>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-xl font-bold">Dashboard</h2>
+          <p className="text-sm text-muted-foreground">Visão geral completa do sistema</p>
+        </div>
+
+        {/* Filtro de Período */}
+        <div className="flex flex-wrap items-center gap-2">
+          <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground mr-1">
+            <Filter className="h-4 w-4" />
+            <span>Período:</span>
+          </div>
+          <Select value={dateRange} onValueChange={(v) => setDateRange(v as DateRange)}>
+            <SelectTrigger className="w-[160px] h-9 text-sm font-medium">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="hoje">Hoje</SelectItem>
+              <SelectItem value="semana">Última Semana</SelectItem>
+              <SelectItem value="mes">Último Mês</SelectItem>
+              <SelectItem value="ano">Este Ano</SelectItem>
+              <SelectItem value="personalizado">Personalizado</SelectItem>
+            </SelectContent>
+          </Select>
+
+          {dateRange === 'personalizado' && (
+            <div className="flex items-center gap-2 bg-card border rounded-md p-1 px-2">
+              <Label className="text-xs text-muted-foreground">De</Label>
+              <Input
+                type="date"
+                value={dataInicio}
+                onChange={(e) => setDataInicio(e.target.value)}
+                className="h-7 w-[120px] text-xs px-1 border-none focus-visible:ring-0"
+              />
+              <Label className="text-xs text-muted-foreground">Até</Label>
+              <Input
+                type="date"
+                value={dataFim}
+                onChange={(e) => setDataFim(e.target.value)}
+                className="h-7 w-[120px] text-xs px-1 border-none focus-visible:ring-0"
+              />
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── KPI Cards (2 rows of 4) ── */}
@@ -607,11 +837,11 @@ export default function DashboardPage() {
             <CardContent className="pt-0">
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={DADOS_GRAFICO_BARRAS} cursor={<ChartCursor />}>
+                  <BarChart data={entradasSaidasPorHora}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis dataKey="hora" tick={AXIS_TICK_STYLE} />
-                    <YAxis tick={AXIS_TICK_STYLE} />
-                    <Tooltip content={<ChartTooltip />} />
+                    <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
+                    <Tooltip content={<ChartTooltip />} cursor={<ChartCursor />} />
                     <Legend wrapperStyle={LEGEND_STYLE} />
                     <Bar dataKey="entradas" fill="#10b981" radius={[4, 4, 0, 0]} name="Entradas" />
                     <Bar dataKey="saidas" fill="#14b8a6" radius={[4, 4, 0, 0]} name="Saídas" />
@@ -630,11 +860,11 @@ export default function DashboardPage() {
             <CardContent className="pt-0">
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={DADOS_GRAFICO_LINHA} cursor={<ChartCursor />}>
+                  <LineChart data={tendenciaSemanal}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis dataKey="dia" tick={AXIS_TICK_STYLE} />
-                    <YAxis tick={AXIS_TICK_STYLE} />
-                    <Tooltip content={<ChartTooltip />} />
+                    <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
+                    <Tooltip content={<ChartTooltip />} cursor={<ChartCursor />} />
                     <Legend wrapperStyle={LEGEND_STYLE} />
                     <Line
                       type="monotone"
@@ -653,34 +883,40 @@ export default function DashboardPage() {
         </motion.div>
       </div>
 
-      {/* ── Charts Row 2: Original (Distribuição por Categoria + Fluxo por Período) ── */}
+      {/* ── Charts Row 2: Checklists por Status + Fluxo por Período ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         <motion.div variants={item}>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Distribuição por Categoria</CardTitle>
+              <CardTitle className="text-sm font-medium">Checklists por Status</CardTitle>
             </CardHeader>
             <CardContent className="pt-0">
               <div className="h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={DADOS_GRAFICO_PIZZA}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={50}
-                      outerRadius={90}
-                      paddingAngle={2}
-                      dataKey="value"
-                    >
-                      {DADOS_GRAFICO_PIZZA.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.fill} />
-                      ))}
-                    </Pie>
-                    <Tooltip content={<ChartTooltip />} />
-                    <Legend wrapperStyle={LEGEND_STYLE} />
-                  </PieChart>
-                </ResponsiveContainer>
+                {checklistsPorStatus.length > 0 ? (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={checklistsPorStatus}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={50}
+                        outerRadius={90}
+                        paddingAngle={2}
+                        dataKey="value"
+                      >
+                        {checklistsPorStatus.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={(entry as any).fill} />
+                        ))}
+                      </Pie>
+                      <Tooltip content={<ChartTooltip />} cursor={<ChartCursor />} />
+                      <Legend wrapperStyle={LEGEND_STYLE} />
+                    </PieChart>
+                  </ResponsiveContainer>
+                ) : (
+                  <div className="h-full flex items-center justify-center text-muted-foreground text-sm">
+                    Nenhum checklist registrado
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -694,11 +930,11 @@ export default function DashboardPage() {
             <CardContent className="pt-0">
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <AreaChart data={DADOS_GRAFICO_AREA} cursor={<ChartCursor />}>
+                  <AreaChart data={fluxoPorPeriodo}>
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                     <XAxis dataKey="periodo" tick={AXIS_TICK_STYLE_SMALL} />
-                    <YAxis tick={AXIS_TICK_STYLE} />
-                    <Tooltip content={<ChartTooltip />} />
+                    <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
+                    <Tooltip content={<ChartTooltip />} cursor={<ChartCursor />} />
                     <Legend wrapperStyle={LEGEND_STYLE} />
                     <defs>
                       <linearGradient id="colorFluxo" x1="0" y1="0" x2="0" y2="1">
@@ -732,11 +968,11 @@ export default function DashboardPage() {
             <CardContent className="pt-0">
               <div className="h-64">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={fluxoPorCategoria} layout="vertical" cursor={<ChartCursor />}>
+                  <BarChart data={fluxoPorCategoria} layout="vertical">
                     <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                    <XAxis type="number" tick={AXIS_TICK_STYLE} />
+                    <XAxis type="number" tick={AXIS_TICK_STYLE} allowDecimals={false} />
                     <YAxis dataKey="categoria" type="category" width={100} tick={AXIS_TICK_STYLE_SMALL} />
-                    <Tooltip content={<ChartTooltip />} />
+                    <Tooltip content={<ChartTooltip />} cursor={<ChartCursor />} />
                     <Legend wrapperStyle={LEGEND_STYLE} />
                     <Bar dataKey="Abertos" fill="#f59e0b" radius={[0, 4, 4, 0]} name="Abertos" stackId="a" />
                     <Bar dataKey="Finalizados" fill="#10b981" radius={[0, 4, 4, 0]} name="Finalizados" stackId="a" />
@@ -756,11 +992,11 @@ export default function DashboardPage() {
               <div className="h-64">
                 {empresasMaisFrequentes.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={empresasMaisFrequentes} layout="vertical" cursor={<ChartCursor />}>
+                    <BarChart data={empresasMaisFrequentes} layout="vertical">
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                      <XAxis type="number" tick={AXIS_TICK_STYLE} />
+                      <XAxis type="number" tick={AXIS_TICK_STYLE} allowDecimals={false} />
                       <YAxis dataKey="empresa" type="category" width={130} tick={AXIS_TICK_STYLE_SMALL} />
-                      <Tooltip content={<ChartTooltip />} />
+                      <Tooltip content={<ChartTooltip />} cursor={<ChartCursor />} />
                       <Legend wrapperStyle={LEGEND_STYLE} />
                       <Bar dataKey="registros" fill="#06b6d4" radius={[0, 4, 4, 0]} name="Registros" />
                     </BarChart>
@@ -787,11 +1023,11 @@ export default function DashboardPage() {
               <div className="h-64">
                 {ocorrenciasPorTipo.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={ocorrenciasPorTipo} cursor={<ChartCursor />}>
+                    <BarChart data={ocorrenciasPorTipo}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
                       <XAxis dataKey="tipo" tick={AXIS_TICK_STYLE_SMALL} />
-                      <YAxis tick={AXIS_TICK_STYLE} />
-                      <Tooltip content={<ChartTooltip />} />
+                      <YAxis tick={AXIS_TICK_STYLE} allowDecimals={false} />
+                      <Tooltip content={<ChartTooltip />} cursor={<ChartCursor />} />
                       <Legend wrapperStyle={LEGEND_STYLE} />
                       <Bar dataKey="qtd" fill="#ef4444" radius={[4, 4, 0, 0]} name="Ocorrências" />
                     </BarChart>
@@ -829,7 +1065,7 @@ export default function DashboardPage() {
                           <Cell key={`grav-${index}`} fill={entry.fill} />
                         ))}
                       </Pie>
-                      <Tooltip content={<ChartTooltip />} />
+                      <Tooltip content={<ChartTooltip />} cursor={<ChartCursor />} />
                       <Legend wrapperStyle={LEGEND_STYLE} />
                     </PieChart>
                   </ResponsiveContainer>
@@ -869,7 +1105,7 @@ export default function DashboardPage() {
                           <Cell key={`oc-status-${index}`} fill={entry.fill} />
                         ))}
                       </Pie>
-                      <Tooltip content={<ChartTooltip />} />
+                      <Tooltip content={<ChartTooltip />} cursor={<ChartCursor />} />
                       <Legend wrapperStyle={LEGEND_STYLE} />
                     </PieChart>
                   </ResponsiveContainer>
@@ -906,7 +1142,7 @@ export default function DashboardPage() {
                           <Cell key={`vei-${index}`} fill={entry.fill} />
                         ))}
                       </Pie>
-                      <Tooltip content={<ChartTooltip />} />
+                      <Tooltip content={<ChartTooltip />} cursor={<ChartCursor />} />
                       <Legend wrapperStyle={LEGEND_STYLE} />
                     </PieChart>
                   </ResponsiveContainer>
@@ -946,7 +1182,7 @@ export default function DashboardPage() {
                           <Cell key={`pes-${index}`} fill={entry.fill} />
                         ))}
                       </Pie>
-                      <Tooltip content={<ChartTooltip />} />
+                      <Tooltip content={<ChartTooltip />} cursor={<ChartCursor />} />
                       <Legend wrapperStyle={LEGEND_STYLE} />
                     </PieChart>
                   </ResponsiveContainer>
@@ -983,7 +1219,7 @@ export default function DashboardPage() {
                           <Cell key={`pa-${index}`} fill={entry.fill} />
                         ))}
                       </Pie>
-                      <Tooltip content={<ChartTooltip />} />
+                      <Tooltip content={<ChartTooltip />} cursor={<ChartCursor />} />
                       <Legend wrapperStyle={LEGEND_STYLE} />
                     </PieChart>
                   </ResponsiveContainer>
@@ -1023,7 +1259,7 @@ export default function DashboardPage() {
                           <Cell key={`ap-${index}`} fill={entry.fill} />
                         ))}
                       </Pie>
-                      <Tooltip content={<ChartTooltip />} />
+                      <Tooltip content={<ChartTooltip />} cursor={<ChartCursor />} />
                       <Legend wrapperStyle={LEGEND_STYLE} />
                     </PieChart>
                   </ResponsiveContainer>
@@ -1060,7 +1296,7 @@ export default function DashboardPage() {
                           <Cell key={`insp-${index}`} fill={entry.fill} />
                         ))}
                       </Pie>
-                      <Tooltip content={<ChartTooltip />} />
+                      <Tooltip content={<ChartTooltip />} cursor={<ChartCursor />} />
                       <Legend wrapperStyle={LEGEND_STYLE} />
                     </PieChart>
                   </ResponsiveContainer>
@@ -1088,7 +1324,7 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="pt-0">
               <div className="space-y-2">
-                {listaNegra.length > 0 ? listaNegra.slice(0, 3).map((ln) => (
+                {listaNegraFiltered.length > 0 ? listaNegraFiltered.slice(0, 3).map((ln) => (
                   <div key={ln.id} className="flex items-center justify-between text-sm">
                     <span className="truncate font-medium">{ln.nome}</span>
                     <span className={`text-xs px-2 py-0.5 rounded-full ${
@@ -1100,10 +1336,10 @@ export default function DashboardPage() {
                     </span>
                   </div>
                 )) : (
-                  <p className="text-sm text-muted-foreground">Nenhum registro</p>
+                  <p className="text-sm text-muted-foreground">Nenhum registro no período</p>
                 )}
-                {listaNegra.length > 3 && (
-                  <p className="text-xs text-muted-foreground">+{listaNegra.length - 3} mais</p>
+                {listaNegraFiltered.length > 3 && (
+                  <p className="text-xs text-muted-foreground">+{listaNegraFiltered.length - 3} mais</p>
                 )}
               </div>
             </CardContent>
@@ -1121,8 +1357,8 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="pt-0">
               <div className="space-y-2">
-                {avisos.filter((a) => a.fixado).length > 0
-                  ? avisos.filter((a) => a.fixado).slice(0, 3).map((av) => (
+                {avisosFiltered.filter((a) => a.fixado).length > 0
+                  ? avisosFiltered.filter((a) => a.fixado).slice(0, 3).map((av) => (
                       <div key={av.id} className="flex items-center justify-between text-sm">
                         <span className="truncate font-medium">{av.titulo}</span>
                         <span className={`text-xs px-2 py-0.5 rounded-full ${
@@ -1136,10 +1372,10 @@ export default function DashboardPage() {
                         </span>
                       </div>
                     ))
-                  : <p className="text-sm text-muted-foreground">Nenhum aviso fixado</p>
+                  : <p className="text-sm text-muted-foreground">Nenhum aviso fixado no período</p>
                 }
-                {avisos.filter((a) => a.fixado).length > 3 && (
-                  <p className="text-xs text-muted-foreground">+{avisos.filter((a) => a.fixado).length - 3} mais</p>
+                {avisosFiltered.filter((a) => a.fixado).length > 3 && (
+                  <p className="text-xs text-muted-foreground">+{avisosFiltered.filter((a) => a.fixado).length - 3} mais</p>
                 )}
               </div>
             </CardContent>
@@ -1157,8 +1393,8 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent className="pt-0">
               <div className="space-y-2">
-                {preAutorizacoes.filter((p) => p.status === 'agendado' || p.status === 'confirmado').length > 0
-                  ? preAutorizacoes
+                {preAuthFiltered.filter((p) => p.status === 'agendado' || p.status === 'confirmado').length > 0
+                  ? preAuthFiltered
                       .filter((p) => p.status === 'agendado' || p.status === 'confirmado')
                       .slice(0, 3)
                       .map((pa) => (
@@ -1173,7 +1409,7 @@ export default function DashboardPage() {
                           </span>
                         </div>
                       ))
-                  : <p className="text-sm text-muted-foreground">Nenhuma pendente</p>
+                  : <p className="text-sm text-muted-foreground">Nenhuma pendente no período</p>
                 }
               </div>
             </CardContent>

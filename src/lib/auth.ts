@@ -11,7 +11,7 @@ import {
   updateProfile,
   type User as FirebaseUser,
 } from 'firebase/auth';
-import { doc, setDoc, getDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { doc, setDoc, getDoc, serverTimestamp, Timestamp, type FieldValue } from 'firebase/firestore';
 import { auth, db } from './firebase';
 
 // ── Firestore user document shape ──
@@ -19,8 +19,8 @@ export interface FirestoreUser {
   nome: string;
   email: string;
   senha: string;
-  dataCadastro: Timestamp | null;
-  ultimoLogin: Timestamp | null;
+  dataCadastro: Timestamp | FieldValue | null;
+  ultimoLogin: Timestamp | FieldValue | null;
 }
 
 // ── Collection name ──
@@ -140,7 +140,7 @@ export async function ensureUserProfile(
 // ── Update user profile in Firestore ──
 export async function updateUserProfile(
   uid: string,
-  data: Partial<Pick<FirestoreUser, 'nome'>> & Record<string, string>
+  data: Partial<Pick<FirestoreUser, 'nome'>> & Record<string, any>
 ): Promise<void> {
   try {
     await setDoc(doc(db, USUARIOS_COL, uid), data, { merge: true });

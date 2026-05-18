@@ -35,12 +35,60 @@ export async function getDocument<T>(path: string, id: string): Promise<T | null
   return { id: snap.id, ...snap.data() } as T;
 }
 
+// ── Helper to automatically convert string fields to uppercase ──
+const DONT_UPPERCASE_KEYS = new Set([
+  'id',
+  'categoria',
+  'status',
+  'tipo',
+  'gravidade',
+  'prioridade',
+  'turno',
+  'email',
+  'senha',
+  'fotoUrl',
+  'foto',
+  'assinatura',
+  'assinaturaColaborador',
+  'checklistId',
+  'inspecaoId',
+  'rondaId',
+  'protocoloId',
+  'registroFluxoId',
+  'versaoAnteriorId',
+]);
+
+function transformToUpperCase<T>(obj: T): T {
+  if (typeof obj === 'string') {
+    return obj.toUpperCase() as unknown as T;
+  }
+  if (Array.isArray(obj)) {
+    return obj.map((item) => transformToUpperCase(item)) as unknown as T;
+  }
+  if (obj !== null && typeof obj === 'object') {
+    if (obj instanceof Date || 'toDate' in (obj as any) || '_methodName' in (obj as any)) {
+      return obj;
+    }
+    const newObj: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj)) {
+      if (DONT_UPPERCASE_KEYS.has(key)) {
+        newObj[key] = value;
+      } else {
+        newObj[key] = transformToUpperCase(value);
+      }
+    }
+    return newObj as unknown as T;
+  }
+  return obj;
+}
+
 // ── Add a document with auto-generated ID ──
 export async function addDocument<T extends Record<string, unknown>>(
   path: string,
   data: T
 ): Promise<string> {
-  const ref = await addDoc(collection(db, path), data);
+  const transformed = transformToUpperCase(data);
+  const ref = await addDoc(collection(db, path), transformed);
   return ref.id;
 }
 
@@ -50,7 +98,8 @@ export async function setDocument<T extends Record<string, unknown>>(
   id: string,
   data: T
 ): Promise<void> {
-  await setDoc(doc(db, path, id), data);
+  const transformed = transformToUpperCase(data);
+  await setDoc(doc(db, path, id), transformed);
 }
 
 // ── Update specific fields of a document (merge) ──
@@ -59,7 +108,8 @@ export async function updateDocument<T extends Record<string, unknown>>(
   id: string,
   data: Partial<T>
 ): Promise<void> {
-  await updateDoc(doc(db, path, id), data as Record<string, unknown>);
+  const transformed = transformToUpperCase(data);
+  await updateDoc(doc(db, path, id), transformed as Record<string, unknown>);
 }
 
 // ── Delete a document ──

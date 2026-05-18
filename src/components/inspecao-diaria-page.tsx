@@ -31,7 +31,7 @@ import {
 import { toast } from 'sonner';
 
 type StatusFilter = 'todos' | StatusInspecao;
-type TurnoFilter = 'todos' | 'manha' | 'tarde' | 'noite';
+type TurnoFilter = 'todos' | 'diurno' | 'noturno';
 
 const statusColors: Record<StatusInspecao, string> = {
   em_andamento: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
@@ -70,9 +70,8 @@ const itemStatusIcons: Record<StatusItemInspecao, React.ElementType> = {
 };
 
 const turnoLabels: Record<string, string> = {
-  manha: 'Manhã',
-  tarde: 'Tarde',
-  noite: 'Noite',
+  diurno: 'Diurno',
+  noturno: 'Noturno',
 };
 
 export default function InspecaoDiariaPage() {
@@ -83,7 +82,7 @@ export default function InspecaoDiariaPage() {
 
   // New inspection dialog
   const [newDialogOpen, setNewDialogOpen] = useState(false);
-  const [newTurno, setNewTurno] = useState<'manha' | 'tarde' | 'noite'>('manha');
+  const [newTurno, setNewTurno] = useState<'diurno' | 'noturno'>('diurno');
   const [newSupervisor, setNewSupervisor] = useState('');
 
   // Detail / fill dialog
@@ -129,7 +128,7 @@ export default function InspecaoDiariaPage() {
 
   // Open new inspection dialog
   const handleOpenNew = () => {
-    setNewTurno('manha');
+    setNewTurno('diurno');
     setNewSupervisor('');
     setNewDialogOpen(true);
   };
@@ -321,9 +320,8 @@ export default function InspecaoDiariaPage() {
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="todos">Todos os Turnos</SelectItem>
-            <SelectItem value="manha">Manhã</SelectItem>
-            <SelectItem value="tarde">Tarde</SelectItem>
-            <SelectItem value="noite">Noite</SelectItem>
+            <SelectItem value="diurno">Diurno</SelectItem>
+            <SelectItem value="noturno">Noturno</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -437,14 +435,13 @@ export default function InspecaoDiariaPage() {
           <div className="grid grid-cols-1 gap-4">
             <div className="space-y-2">
               <Label>Turno *</Label>
-              <Select value={newTurno} onValueChange={v => setNewTurno(v as 'manha' | 'tarde' | 'noite')}>
+              <Select value={newTurno} onValueChange={v => setNewTurno(v as 'diurno' | 'noturno')}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="manha">Manhã</SelectItem>
-                  <SelectItem value="tarde">Tarde</SelectItem>
-                  <SelectItem value="noite">Noite</SelectItem>
+                  <SelectItem value="diurno">Diurno</SelectItem>
+                  <SelectItem value="noturno">Noturno</SelectItem>
                 </SelectContent>
               </Select>
             </div>

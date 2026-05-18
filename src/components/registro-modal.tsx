@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { format } from 'date-fns';
 import {
   Dialog,
@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import {
   Select,
@@ -28,6 +29,7 @@ import {
 import AutocompleteInput, { type AutocompleteSuggestion } from './autocomplete-input';
 import SearchInput from './search-input';
 import { toast } from 'sonner';
+import { AlertTriangle } from 'lucide-react';
 
 // Unified data structure for autocomplete — stores ALL available info
 // regardless of which category it came from
@@ -41,7 +43,7 @@ interface UnifiedSuggestionData {
 }
 
 // Maps unified data → form fields for each category
-function mapToFormFields(categoria: CategoriaFluxo, data: UnifiedSuggestionData): Record<string, string> {
+function mapToFormFields(categoria: CategoriaFluxo | '', data: UnifiedSuggestionData): Record<string, string> {
   const mapped: Record<string, string> = {};
 
   switch (categoria) {
@@ -158,22 +160,41 @@ interface RegistroModalProps {
   open: boolean;
   onClose: () => void;
   categoriaInicial?: CategoriaFluxo;
+  registroInicial?: RegistroFluxo | null;
+  isRefacao?: boolean;
 }
 
 export default function RegistroModal({
   open,
   onClose,
   categoriaInicial,
+  registroInicial,
+  isRefacao,
 }: RegistroModalProps) {
-  const { addRegistroFluxo, pessoas, empresas, departamentos, ramais, registrosFluxo, user } = useAppStore();
-  const [categoria, setCategoria] = useState<CategoriaFluxo>(
-    categoriaInicial || 'entregas2'
-  );
+  const { addRegistroFluxo, inativarRegistroFluxo, pessoas, empresas, departamentos, ramais, registrosFluxo, user } = useAppStore();
+  const [categoria, setCategoria] = useState<CategoriaFluxo | ''>('');
   const [formData, setFormData] = useState<Record<string, string>>(() => ({
     data: format(new Date(), 'dd/MM/yyyy'),
     horarioEntrada: format(new Date(), 'HH:mm'),
     porteiro: user?.nome || '',
   }));
+
+  useEffect(() => {
+    if (open) {
+      if (registroInicial && isRefacao) {
+        setCategoria(registroInicial.categoria);
+        const { id: _i, inativo: _in, versaoAnteriorId: _v, dataInativacao: _di, motivoRefacao: _m, ...rest } = registroInicial as any;
+        setFormData({ ...rest });
+      } else {
+        setCategoria('');
+        setFormData({
+          data: format(new Date(), 'dd/MM/yyyy'),
+          horarioEntrada: format(new Date(), 'HH:mm'),
+          porteiro: user?.nome || '',
+        });
+      }
+    }
+  }, [open, registroInicial, isRefacao, user]);
 
   // ── Unified suggestion builders ──
   // All suggestions store data using UnifiedSuggestionData keys
@@ -435,7 +456,8 @@ export default function RegistroModal({
   // Always overwrite because the user explicitly chose a suggestion
   const handleAutoSelect = (suggestionData: Record<string, string>) => {
     const unified = suggestionData as unknown as UnifiedSuggestionData;
-    const mapped = mapToFormFields(categoria, unified);
+    const activeCatForAuto = categoria || categoriaInicial || 'entregas2';
+    const mapped = mapToFormFields(activeCatForAuto, unified);
 
     setFormData((prev) => ({
       ...prev,
@@ -447,6 +469,11 @@ export default function RegistroModal({
   };
 
   const handleSubmit = () => {
+    if (!categoria) {
+      toast.error('Selecione uma categoria obrigatória');
+      return;
+    }
+
     const id = `fl_${Date.now()}`;
     let registro: RegistroFluxo;
 
@@ -597,13 +624,28 @@ export default function RegistroModal({
         return;
     }
 
+    if (registroInicial && isRefacao) {
+      registro.versaoAnteriorId = registroInicial.id;
+      if (registro.detalhes) {
+        registro.detalhes = registro.detalhes + ` [Versão corrigida referente ao #${registroInicial.id}]`;
+      } else {
+        registro.detalhes = `[Versão corrigida referente ao #${registroInicial.id}]`;
+      }
+      inativarRegistroFluxo(registroInicial.id, id, 'Substituído por nova versão corrigida (Refazer)');
+    }
+
+    if (formData.observacao?.trim()) {
+      registro.observacao = formData.observacao.trim();
+    }
+
     addRegistroFluxo(registro);
-    toast.success('Registro adicionado com sucesso!');
+    toast.success(isRefacao ? 'Nova versão do registro salva com sucesso!' : 'Registro adicionado com sucesso!');
     onClose();
   };
 
   const renderFields = () => {
-    switch (categoria) {
+    const activeCatForFields = categoria || categoriaInicial || 'entregas2';
+    switch (activeCatForFields) {
       case 'entregas1':
         return (
           <>
@@ -1080,6 +1122,8 @@ export default function RegistroModal({
             </div>
           </>
         );
+      default:
+        return null;
     }
   };
 
@@ -1087,18 +1131,31 @@ export default function RegistroModal({
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto custom-scrollbar">
         <DialogHeader>
-          <DialogTitle>Novo Registro</DialogTitle>
+          <DialogTitle>{isRefacao ? 'Nova versão do Registro' : 'Novo Registro'}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
+          {isRefacao && (
+            <div className="bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-xs rounded-xl p-3.5 flex items-start gap-2.5">
+              <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+              <div>
+                <p className="font-bold uppercase tracking-wider text-[11px]">Modo de Refação Auditável</p>
+                <p>Altere as informações necessárias abaixo e salve para criar uma nova versão corrigida do registro original #{registroInicial?.id}.</p>
+              </div>
+            </div>
+          )}
+
           <div className="space-y-2">
-            <Label>Categoria</Label>
+            <Label className="flex items-center gap-1">
+              Categoria <span className="text-red-500">*</span>
+            </Label>
             <Select
               value={categoria}
               onValueChange={handleCategoriaChange}
+              disabled={isRefacao}
             >
-              <SelectTrigger>
-                <SelectValue />
+              <SelectTrigger className={!categoria ? 'text-muted-foreground border-amber-500/50 focus:ring-amber-500' : ''}>
+                <SelectValue placeholder="Selecione a categoria obrigatória" />
               </SelectTrigger>
               <SelectContent>
                 {CATEGORIAS_FLUXO.map((cat) => (
@@ -1111,6 +1168,19 @@ export default function RegistroModal({
           </div>
 
           <div className="grid grid-cols-1 gap-3">{renderFields()}</div>
+
+          {categoria && (
+            <div className="space-y-2 pt-2 border-t border-border/50">
+              <Label>Observação <span className="text-muted-foreground font-normal">(Opcional)</span></Label>
+              <Textarea
+                placeholder="Anotações ou observações adicionais sobre o registro..."
+                value={formData.observacao || ''}
+                onChange={(e) => setFormData((prev) => ({ ...prev, observacao: e.target.value }))}
+                rows={3}
+                className="resize-none text-base"
+              />
+            </div>
+          )}
         </div>
 
         <DialogFooter className="gap-2 sm:gap-0">

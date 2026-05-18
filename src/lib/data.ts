@@ -43,8 +43,16 @@ export const CATEGORIAS_FLUXO: { value: CategoriaFluxo; label: string }[] = [
   { value: 'correspondencias', label: 'CORRESPONDÊNCIAS' },
 ];
 
-export interface RegistroEntregas1 {
+export interface BaseRegistroFluxo {
   id: string;
+  inativo?: boolean;
+  versaoAnteriorId?: string;
+  dataInativacao?: string;
+  motivoRefacao?: string;
+  observacao?: string;
+}
+
+export interface RegistroEntregas1 extends BaseRegistroFluxo {
   categoria: 'entregas1';
   data: string;
   horarioEntrada: string;
@@ -56,8 +64,7 @@ export interface RegistroEntregas1 {
   ocorrencia?: string;
 }
 
-export interface RegistroVisitantes {
-  id: string;
+export interface RegistroVisitantes extends BaseRegistroFluxo {
   categoria: 'visitantes';
   nomeEmpresa: string;
   nome?: string;
@@ -71,8 +78,7 @@ export interface RegistroVisitantes {
   ocorrencia?: string;
 }
 
-export interface RegistroPrestadores {
-  id: string;
+export interface RegistroPrestadores extends BaseRegistroFluxo {
   categoria: 'prestadores';
   nomeEmpresa: string;
   nome?: string;
@@ -86,8 +92,7 @@ export interface RegistroPrestadores {
   ocorrencia?: string;
 }
 
-export interface RegistroPesagem {
-  id: string;
+export interface RegistroPesagem extends BaseRegistroFluxo {
   categoria: 'pesagem';
   data: string;
   empresa: string;
@@ -104,8 +109,7 @@ export interface RegistroPesagem {
   ocorrencia?: string;
 }
 
-export interface RegistroEntregas2 {
-  id: string;
+export interface RegistroEntregas2 extends BaseRegistroFluxo {
   categoria: 'entregas2';
   data: string;
   horarioEntrada: string;
@@ -118,8 +122,7 @@ export interface RegistroEntregas2 {
   ocorrencia?: string;
 }
 
-export interface RegistroColeta {
-  id: string;
+export interface RegistroColeta extends BaseRegistroFluxo {
   categoria: 'coleta';
   rgCpf: string;
   horarioEntrada: string;
@@ -132,8 +135,7 @@ export interface RegistroColeta {
   ocorrencia?: string;
 }
 
-export interface RegistroMovimentacao {
-  id: string;
+export interface RegistroMovimentacao extends BaseRegistroFluxo {
   categoria: 'movimentacao';
   nomeColaborador: string;
   rgCpf: string;
@@ -147,8 +149,7 @@ export interface RegistroMovimentacao {
   ocorrencia?: string;
 }
 
-export interface RegistroCorrespondencias {
-  id: string;
+export interface RegistroCorrespondencias extends BaseRegistroFluxo {
   categoria: 'correspondencias';
   destinatario: string;
   remetente: string;
@@ -183,7 +184,7 @@ export interface Empresa {
 export interface Departamento {
   id: string;
   nome: string;
-  empresa: string;
+  empresa?: string;
   responsavel?: string;
 }
 
@@ -221,7 +222,7 @@ export interface Ramal {
   ramal: string;
 }
 
-export type TurnoAviso = 'todos' | 'manha' | 'tarde' | 'noite';
+export type TurnoAviso = 'todos' | 'diurno' | 'noturno';
 export type CategoriaAviso = 'Segurança' | 'Operacional' | 'Administrativo' | 'Urgente';
 
 export interface Aviso {
@@ -459,7 +460,7 @@ export interface ItemInspecao {
 export interface InspecaoDiaria {
   id: string;
   data: string;
-  turno: 'manha' | 'tarde' | 'noite';
+  turno: 'diurno' | 'noturno';
   itens: ItemInspecao[];
   observacoesGerais: string;
   porteiro: string;

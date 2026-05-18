@@ -88,7 +88,7 @@ export const AVISOS_INICIAIS: Aviso[] = [
     prioridade: 'alta',
     data: '2025-03-15',
     autor: 'Roberto Lima',
-    turno: 'noite',
+    turno: 'noturno',
     categoria: 'Segurança',
     dataExpiracao: '2025-03-21',
     fixado: true,
@@ -114,7 +114,7 @@ export const AVISOS_INICIAIS: Aviso[] = [
     prioridade: 'media',
     data: '2025-03-10',
     autor: 'João Pedro Oliveira',
-    turno: 'tarde',
+    turno: 'diurno',
     categoria: 'Administrativo',
     dataExpiracao: '2025-03-25',
     fixado: false,
@@ -1160,7 +1160,7 @@ export const INSPECOES_INICIAIS: InspecaoDiaria[] = [
   {
     id: 'inp1',
     data: today,
-    turno: 'manha',
+    turno: 'diurno',
     itens: [
       { id: 'inp1_it0', inspecaoId: 'inp1', item: 'Portão principal — abertura/fechamento', status: 'ok', observacao: '', acaoCorretiva: '' },
       { id: 'inp1_it1', inspecaoId: 'inp1', item: 'Cancela de entrada — funcionamento', status: 'ok', observacao: '', acaoCorretiva: '' },
@@ -1191,7 +1191,7 @@ export const INSPECOES_INICIAIS: InspecaoDiaria[] = [
   {
     id: 'inp2',
     data: '2025-03-14',
-    turno: 'noite',
+    turno: 'noturno',
     itens: ITENS_INSPECAO_PADRAO.map((item, idx) => ({
       id: `inp2_it${idx}`,
       inspecaoId: 'inp2',

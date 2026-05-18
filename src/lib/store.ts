@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { format } from 'date-fns';
 import type {
   PageType,
   CategoriaFluxo,
@@ -304,10 +305,11 @@ interface AppState {
   setAuthFromFirebase: (firebaseUser: FirebaseUser, firestoreData?: FirestoreUser | null) => void;
 
   // Fluxo
-  categoriaAtiva: CategoriaFluxo;
-  setCategoriaAtiva: (cat: CategoriaFluxo) => void;
+  categoriaAtiva: CategoriaFluxo | 'todos';
+  setCategoriaAtiva: (cat: CategoriaFluxo | 'todos') => void;
   registrosFluxo: RegistroFluxo[];
   addRegistroFluxo: (registro: RegistroFluxo) => void;
+  inativarRegistroFluxo: (id: string, versaoNovaId?: string, motivoRefacao?: string) => void;
   registrarSaida: (id: string, detalhes?: string, ocorrencia?: string, pesoSaida?: number, porteiroSaida?: string) => void;
   buscaFluxo: string;
   setBuscaFluxo: (busca: string) => void;
@@ -538,7 +540,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   // Fluxo (Firestore-backed — Phase 3)
-  categoriaAtiva: 'entregas2',
+  categoriaAtiva: 'todos',
   setCategoriaAtiva: (cat) => set({ categoriaAtiva: cat }),
   registrosFluxo: [],
   addRegistroFluxo: (registro) => {
@@ -546,6 +548,30 @@ export const useAppStore = create<AppState>((set, get) => ({
     const { id, ...data } = registro;
     setRegistroFluxoFS(id, data).catch((err) => {
       console.warn('[Firestore] Falha ao adicionar registro de fluxo:', err);
+    });
+  },
+  inativarRegistroFluxo: (id, versaoNovaId, motivoRefacao) => {
+    const now = format(new Date(), 'dd/MM/yyyy HH:mm');
+    set((state) => ({
+      registrosFluxo: state.registrosFluxo.map((r) =>
+        r.id === id
+          ? {
+              ...r,
+              inativo: true,
+              dataInativacao: now,
+              versaoAnteriorId: versaoNovaId,
+              motivoRefacao: motivoRefacao || 'Refeito com nova versão',
+            }
+          : r
+      ),
+    }));
+    updateRegistroFluxoFS(id, {
+      inativo: true,
+      dataInativacao: now,
+      versaoAnteriorId: versaoNovaId || undefined,
+      motivoRefacao: motivoRefacao || 'Refeito com nova versão',
+    }).catch((err) => {
+      console.warn('[Firestore] Falha ao inativar registro de fluxo:', err);
     });
   },
   registrarSaida: (id, detalhes?: string, ocorrencia?: string, pesoSaida?: number, porteiroSaida?: string) => {
@@ -873,7 +899,9 @@ export const useAppStore = create<AppState>((set, get) => ({
   // Checklist de Turno (Firestore-backed — Phase 6)
   checklists: [],
   addChecklist: (ck) => {
-    set((state) => ({ checklists: [ck, ...state.checklists] }));
+    set((state) => ({
+      checklists: [ck, ...state.checklists.filter((c) => c.id !== ck.id)],
+    }));
     const { id, ...data } = ck;
     setChecklistFS(id, data).catch((err) => {
       console.warn('[Firestore] Falha ao adicionar checklist:', err);

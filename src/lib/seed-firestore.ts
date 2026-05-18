@@ -8,11 +8,13 @@ import {
   DEPARTAMENTOS_INICIAIS,
   PESSOAS_INICIAIS,
   RAMAIS_INICIAIS,
-  type Empresa,
-  type Departamento,
-  type Pessoa,
-  type Ramal,
 } from './seed-data';
+import type {
+  Empresa,
+  Departamento,
+  Pessoa,
+  Ramal,
+} from './data';
 
 type SeedCollection<T> = {
   name: string;
@@ -42,7 +44,7 @@ export async function seedFirestore(): Promise<{
       let skipped = 0;
 
       for (const item of col.data) {
-        const { id, ...data } = item as { id: string; [key: string]: unknown };
+        const { id, ...data } = item as unknown as { id: string; [key: string]: unknown };
         if (existingIds.has(id)) {
           skipped++;
         } else {

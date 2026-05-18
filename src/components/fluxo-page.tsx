@@ -1,8 +1,8 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Search, LogOut, Inbox, Clock, ArrowRightLeft, User, Building2, Truck, Scale, Package, Calendar, FileText, AlertTriangle, Users, Mail, TrendingUp } from 'lucide-react';
+import { Plus, Search, LogOut, Inbox, Clock, ArrowRightLeft, User, Building2, Truck, Scale, Package, Calendar, FileText, AlertTriangle, Users, Mail, TrendingUp, RotateCcw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -166,6 +166,9 @@ function getAllFields(r: RegistroFluxo): { label: string; value: string }[] {
   if (r.horarioSaida) {
     base.push({ label: 'Horário de Saída', value: r.horarioSaida });
   }
+  if (r.observacao) {
+    base.push({ label: 'Observação', value: r.observacao });
+  }
   if (r.detalhes) {
     base.push({ label: 'Detalhes', value: r.detalhes });
   }
@@ -182,12 +185,15 @@ export default function FluxoPage() {
     setCategoriaAtiva,
     registrosFluxo,
     registrarSaida,
+    inativarRegistroFluxo,
     buscaFluxo,
     setBuscaFluxo,
     user,
   } = useAppStore();
   const [modalOpen, setModalOpen] = useState(false);
-  const [modalCategoria, setModalCategoria] = useState<CategoriaFluxo>(categoriaAtiva);
+  const [modalCategoria, setModalCategoria] = useState<CategoriaFluxo>(
+    categoriaAtiva === 'todos' ? 'visitantes' : categoriaAtiva
+  );
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('aberto');
 
   // Detail modal state
@@ -197,9 +203,17 @@ export default function FluxoPage() {
   const [ocorrenciaSaida, setOcorrenciaSaida] = useState('');
   const [pesoSaidaInput, setPesoSaidaInput] = useState('');
 
+  // Refacao auditavel states
+  const [registroRefacao, setRegistroRefacao] = useState<RegistroFluxo | null>(null);
+  const [isRefacao, setIsRefacao] = useState(false);
+
+  useEffect(() => {
+    setCategoriaAtiva('todos');
+  }, [setCategoriaAtiva]);
+
   const filteredRegistros = useMemo(() => {
     return registrosFluxo.filter((r) => {
-      if (r.categoria !== categoriaAtiva) return false;
+      if (categoriaAtiva !== 'todos' && r.categoria !== categoriaAtiva) return false;
       const hasSaida = 'horarioSaida' in r && r.horarioSaida !== '';
       if (statusFilter === 'aberto' && hasSaida) return false;
       if (statusFilter === 'finalizado' && !hasSaida) return false;
@@ -213,7 +227,9 @@ export default function FluxoPage() {
   }, [registrosFluxo, categoriaAtiva, buscaFluxo, statusFilter]);
 
   const handleAddRegistro = () => {
-    setModalCategoria(categoriaAtiva);
+    setRegistroRefacao(null);
+    setIsRefacao(false);
+    setModalCategoria(categoriaAtiva === 'todos' ? 'visitantes' : categoriaAtiva);
     setModalOpen(true);
   };
 
@@ -240,7 +256,18 @@ export default function FluxoPage() {
     setPesoSaidaInput('');
   };
 
-  const Icon = catIcons[categoriaAtiva];
+  const handleRefazer = (r: RegistroFluxo) => {
+    inativarRegistroFluxo(r.id, undefined, 'Substituído por nova versão corrigida (Refazer)');
+    toast.info('Registro anterior inativado para refação.');
+    setDetailModalOpen(false);
+    setSelectedRegistro(null);
+    setRegistroRefacao(r);
+    setIsRefacao(true);
+    setModalCategoria(r.categoria);
+    setModalOpen(true);
+  };
+
+
 
   return (
     <motion.div
@@ -264,12 +291,13 @@ export default function FluxoPage() {
         {/* Category dropdown filter */}
         <Select
           value={categoriaAtiva}
-          onValueChange={(v) => setCategoriaAtiva(v as CategoriaFluxo)}
+          onValueChange={(v) => setCategoriaAtiva(v as CategoriaFluxo | 'todos')}
         >
           <SelectTrigger className="h-11 text-base bg-muted/50 border-0">
             <SelectValue placeholder="Todos os tipos" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="todos">Todos</SelectItem>
             {CATEGORIAS_FLUXO.map((cat) => (
               <SelectItem key={cat.value} value={cat.value}>
                 {cat.label}
@@ -307,7 +335,7 @@ export default function FluxoPage() {
       </div>
 
       {/* Content area - card list */}
-      <div className="flex-1 p-4 md:p-6 pt-3 pb-28 overflow-y-auto">
+      <div className="flex-1 p-4 md:p-6 pt-3 pb-44 overflow-y-auto">
         {filteredRegistros.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
             <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-4">
@@ -317,8 +345,8 @@ export default function FluxoPage() {
               {statusFilter === 'aberto'
                 ? 'Nenhum registro em aberto'
                 : statusFilter === 'finalizado'
-                ? 'Nenhum registro finalizado'
-                : 'Nenhum registro encontrado'}
+                  ? 'Nenhum registro finalizado'
+                  : 'Nenhum registro encontrado'}
             </p>
             <p className="text-sm text-muted-foreground/70">
               Toque em Registrar entrada para começar.
@@ -340,22 +368,30 @@ export default function FluxoPage() {
               const resultadoDif = isPesagem ? (r as any).resultadoDiferenca ?? null : null;
               const porteiroEntrada = (r as any).porteiroEntrada || null;
               const porteiroSaidaVal = (r as any).porteiroSaida || null;
+              const CardIcon = catIcons[r.categoria] || Package;
 
+              const isInactive = r.inativo;
               return (
                 <Card
                   key={r.id}
-                  className="cursor-pointer hover:bg-muted/50 transition-colors active:scale-[0.98]"
+                  className={`cursor-pointer transition-colors active:scale-[0.98] ${
+                    isInactive ? 'opacity-60 bg-red-500/5 dark:bg-red-500/10 border-dashed border-red-500/30' : 'hover:bg-muted/50'
+                  }`}
                   onClick={() => handleOpenDetail(r)}
                 >
                   <CardContent className="p-3.5">
                     <div className="flex items-start gap-3">
                       <div className="p-2.5 rounded-xl bg-muted shrink-0">
-                        <Icon className="h-6 w-6 text-muted-foreground" />
+                        <CardIcon className="h-6 w-6 text-muted-foreground" />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <h3 className="font-bold text-lg truncate">{mainField}</h3>
-                          {hasSaida ? (
+                          {isInactive ? (
+                            <Badge variant="outline" className="text-red-500 border-red-300 dark:border-red-800 text-xs px-1.5 py-0">
+                              Inativo (Refeito)
+                            </Badge>
+                          ) : hasSaida ? (
                             <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-xs px-1.5 py-0">
                               Concluído
                             </Badge>
@@ -375,17 +411,15 @@ export default function FluxoPage() {
 
                         {/* PESAGEM DE CARGA — resultado em destaque nos finalizados */}
                         {isPesagem && hasSaida && resultadoDif !== null && (
-                          <div className={`mt-2 rounded-xl px-3 py-2 border ${
-                            resultadoDif >= 0
-                              ? 'bg-emerald-500/10 border-emerald-500/30'
-                              : 'bg-red-500/10 border-red-500/30'
-                          }`}>
+                          <div className={`mt-2 rounded-xl px-3 py-2 border ${resultadoDif >= 0
+                            ? 'bg-emerald-500/10 border-emerald-500/30'
+                            : 'bg-red-500/10 border-red-500/30'
+                            }`}>
                             <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
                               Resultado Pesagem
                             </p>
-                            <p className={`text-2xl font-black ${
-                              resultadoDif >= 0 ? 'text-emerald-400' : 'text-red-400'
-                            }`}>
+                            <p className={`text-2xl font-black ${resultadoDif >= 0 ? 'text-emerald-400' : 'text-red-400'
+                              }`}>
                               {resultadoDif >= 0 ? '+' : ''}{resultadoDif.toLocaleString('pt-BR')} kg
                             </p>
                             <p className="text-xs text-muted-foreground">
@@ -433,7 +467,7 @@ export default function FluxoPage() {
       </div>
 
       {/* Fixed bottom register button - above bottom nav */}
-      <div className="fixed bottom-16 left-0 right-0 z-30 p-4 md:px-6 pb-3 bg-background/80 backdrop-blur-md border-t border-border/50">
+      <div className="fixed bottom-16 left-0 right-0 z-30 pt-3 pb-7 px-4 md:px-6 bg-background/80 backdrop-blur-md border-t border-border/50">
         <Button
           onClick={handleAddRegistro}
           className="w-full h-13 bg-emerald-600 hover:bg-emerald-700 text-white text-base font-semibold shadow-lg"
@@ -448,6 +482,8 @@ export default function FluxoPage() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         categoriaInicial={modalCategoria}
+        registroInicial={registroRefacao}
+        isRefacao={isRefacao}
       />
 
       {/* Detail Modal */}
@@ -468,6 +504,19 @@ export default function FluxoPage() {
 
           {selectedRegistro && (
             <div className="space-y-5">
+              {selectedRegistro.inativo && (
+                <div className="bg-red-500/10 border border-red-500/30 text-red-600 dark:text-red-400 text-xs rounded-xl p-3.5 flex items-start gap-2.5">
+                  <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+                  <div className="space-y-0.5">
+                    <p className="font-bold uppercase tracking-wider text-[11px]">Registro Inativado / Versão Anterior</p>
+                    <p>{selectedRegistro.motivoRefacao || 'Substituído por nova versão auditável'}</p>
+                    {selectedRegistro.dataInativacao && (
+                      <p className="text-[10px] text-muted-foreground">Inativado em {selectedRegistro.dataInativacao}</p>
+                    )}
+                  </div>
+                </div>
+              )}
+
               {/* Entry Information */}
               <div className="space-y-3">
                 <div className="flex items-center gap-2 mb-2">
@@ -509,17 +558,15 @@ export default function FluxoPage() {
                           />
                         </div>
                         {hasDiferenca && (
-                          <div className={`rounded-2xl p-4 text-center border-2 ${
-                            diferenca >= 0
-                              ? 'bg-emerald-500/10 border-emerald-500/40'
-                              : 'bg-red-500/10 border-red-500/40'
-                          }`}>
+                          <div className={`rounded-2xl p-4 text-center border-2 ${diferenca >= 0
+                            ? 'bg-emerald-500/10 border-emerald-500/40'
+                            : 'bg-red-500/10 border-red-500/40'
+                            }`}>
                             <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
                               Diferença (Saída − Entrada)
                             </p>
-                            <p className={`text-4xl font-black tracking-tight ${
-                              diferenca >= 0 ? 'text-emerald-400' : 'text-red-400'
-                            }`}>
+                            <p className={`text-4xl font-black tracking-tight ${diferenca >= 0 ? 'text-emerald-400' : 'text-red-400'
+                              }`}>
                               {diferenca >= 0 ? '+' : ''}{diferenca.toLocaleString('pt-BR')} kg
                             </p>
                             <p className="text-xs text-muted-foreground mt-1">
@@ -604,6 +651,22 @@ export default function FluxoPage() {
                   <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-sm px-3 py-1">
                     Saída registrada às {selectedRegistro.horarioSaida}
                   </Badge>
+                </div>
+              )}
+
+              {!selectedRegistro.inativo && (
+                <div className="pt-2 border-t border-border/50 space-y-2">
+                  <p className="text-xs text-muted-foreground text-center">
+                    Auditoria: O registro original não pode ser modificado. Para corrigir, crie uma nova versão auditável.
+                  </p>
+                  <Button
+                    variant="outline"
+                    onClick={() => handleRefazer(selectedRegistro)}
+                    className="w-full h-11 border-amber-500/30 hover:bg-amber-500/10 text-amber-600 dark:text-amber-400 font-semibold"
+                  >
+                    <RotateCcw className="h-4 w-4 mr-2" />
+                    Refazer Registro (Corrigir Versão)
+                  </Button>
                 </div>
               )}
             </div>

@@ -22,6 +22,7 @@ export interface FirestoreUser {
   senha: string;
   dataCadastro: Timestamp | FieldValue | null;
   ultimoLogin: Timestamp | FieldValue | null;
+  settings?: any;
 }
 
 // ── Collection name ──

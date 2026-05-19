@@ -537,7 +537,24 @@ export const useAppStore = create<AppState>((set, get) => ({
       cargo: 'Porteiro',
       dataCadastro: firebaseUser.metadata.creationTime || new Date().toISOString(),
     };
-    set({ isAuthenticated: true, user, authInitialized: true, authLoading: false });
+    
+    // Extract and apply saved settings if present
+    const savedSettings = firestoreData?.settings;
+    if (savedSettings) {
+      set({ 
+        isAuthenticated: true, 
+        user, 
+        authInitialized: true, 
+        authLoading: false,
+        settings: {
+          ...get().settings,
+          ...savedSettings
+        }
+      });
+    } else {
+      set({ isAuthenticated: true, user, authInitialized: true, authLoading: false });
+    }
+    
     // Update ultimoLogin in Firestore (non-blocking)
     updateUltimoLogin(firebaseUser.uid);
     // Start Firestore real-time subscriptions

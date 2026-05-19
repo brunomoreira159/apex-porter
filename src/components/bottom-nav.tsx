@@ -135,7 +135,7 @@ export default function BottomNav() {
             <button
               key={item.page}
               onClick={() => handleNavClick(item.page)}
-              className={`flex flex-col items-center justify-center gap-0.5 min-w-0 flex-1 py-1 transition-colors ${
+              className={`relative flex flex-col items-center justify-center gap-0.5 min-w-0 flex-1 py-1 transition-colors ${
                 isActive(item.page)
                   ? 'text-primary'
                   : 'text-muted-foreground hover:text-foreground'
@@ -179,7 +179,7 @@ export default function BottomNav() {
             <button
               key={item.page}
               onClick={() => handleNavClick(item.page)}
-              className={`flex flex-col items-center justify-center gap-0.5 min-w-0 flex-1 py-1 transition-colors ${
+              className={`relative flex flex-col items-center justify-center gap-0.5 min-w-0 flex-1 py-1 transition-colors ${
                 isActive(item.page)
                   ? 'text-primary'
                   : 'text-muted-foreground hover:text-foreground'

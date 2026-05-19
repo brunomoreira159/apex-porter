@@ -147,6 +147,10 @@
   --sidebar-ring: hsl(217, 20%, 24%);
 }
 
+.dark-apex header {
+  background-color: #059669 !important; /* Verde do botão Fluxo (emerald-600) */
+}
+
 @layer base {
   * {
     @apply border-border outline-ring/50;

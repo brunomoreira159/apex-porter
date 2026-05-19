@@ -147,8 +147,11 @@
   --sidebar-ring: hsl(217, 20%, 24%);
 }
 
-.dark-apex header {
-  background-color: #059669 !important; /* Verde do botão Fluxo (emerald-600) */
+header {
+  --primary: oklch(0.496 0.159 163.299) !important;
+  --primary-foreground: oklch(0.99 0.01 155) !important;
+  background-color: var(--primary) !important;
+  color: var(--primary-foreground) !important;
 }
 
 @layer base {

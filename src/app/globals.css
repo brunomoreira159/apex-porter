@@ -148,8 +148,8 @@
 }
 
 header {
-  --primary: oklch(0.496 0.159 163.299) !important;
-  --primary-foreground: oklch(0.99 0.01 155) !important;
+  --primary: #059669 !important; /* Verde do botão Fluxo (emerald-600) */
+  --primary-foreground: #ffffff !important;
   background-color: var(--primary) !important;
   color: var(--primary-foreground) !important;
 }

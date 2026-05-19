@@ -9,6 +9,7 @@ import {
   onAuthStateChanged,
   sendPasswordResetEmail,
   updateProfile,
+  updatePassword,
   type User as FirebaseUser,
 } from 'firebase/auth';
 import { doc, setDoc, getDoc, serverTimestamp, Timestamp, type FieldValue } from 'firebase/firestore';
@@ -151,6 +152,19 @@ export async function updateUserProfile(
     }
   } catch (err) {
     console.warn('[Firebase] Falha ao atualizar perfil:', err);
+  }
+}
+
+// ── Update password on Firebase Auth + Firestore ──
+export async function updateUserPassword(newPassword: string): Promise<boolean> {
+  if (!auth.currentUser) return false;
+  try {
+    await updatePassword(auth.currentUser, newPassword);
+    await setDoc(doc(db, USUARIOS_COL, auth.currentUser.uid), { senha: newPassword }, { merge: true });
+    return true;
+  } catch (err) {
+    console.warn('[Firebase] Falha ao alterar senha:', err);
+    throw err;
   }
 }
 

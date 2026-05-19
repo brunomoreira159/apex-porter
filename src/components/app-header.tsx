@@ -1,7 +1,9 @@
 'use client';
 
+import React from 'react';
+
 import { useTheme } from 'next-themes';
-import { Settings, LogOut, Sun, Moon, Wifi, WifiOff } from 'lucide-react';
+import { Settings, LogOut, Sun, Moon, Wifi, WifiOff, User as UserIcon } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useOnlineStatus } from '@/lib/hooks/use-firestore';
 import { Button } from '@/components/ui/button';
@@ -35,10 +37,10 @@ export default function AppHeader() {
     <header className="sticky top-0 z-40 bg-primary text-primary-foreground shadow-md" style={{ paddingTop: 'env(safe-area-inset-top, 0px)' }}>
       <div className="flex items-center justify-between px-4 h-14">
         <div className="flex items-center gap-2">
-          <img src="/icons/APEX_LOGO.png" alt="APEX Porter Logo" className="h-6 w-6 object-contain" />
+          <img src="/icons/APEX_LOGO.png" alt="APEX Porter Logo" className="h-9 w-9 md:h-10 md:w-10 object-contain drop-shadow-sm" />
           <div>
-            <h1 className="text-base font-bold leading-tight">APEX PORTER</h1>
-            <p className="text-[10px] leading-tight opacity-80 hidden sm:block">
+            <h1 className="text-xl font-bold tracking-tight leading-tight">APEX PORTER</h1>
+            <p className="text-[11px] leading-tight opacity-85 hidden sm:block">
               Sistema de Registro
             </p>
           </div>
@@ -60,7 +62,16 @@ export default function AppHeader() {
             variant="ghost"
             size="icon"
             className="text-primary-foreground hover:bg-white/10 h-9 w-9"
-            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            onClick={() => {
+              const root = document.documentElement;
+              const isDarkApex = root.classList.contains('dark-apex');
+              root.classList.remove('dark-apex');
+              if (isDarkApex || theme === 'dark') {
+                setTheme('light');
+              } else {
+                setTheme('dark');
+              }
+            }}
           >
             {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
           </Button>
@@ -85,12 +96,16 @@ export default function AppHeader() {
                     {initials}
                   </AvatarFallback>
                 </Avatar>
-                <span className="hidden sm:inline text-sm max-w-24 truncate">
+                <span className="hidden sm:inline text-sm max-w-24 truncate font-medium">
                   {user?.nome || 'Usuário'}
                 </span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem onClick={() => setCurrentPage('perfil')}>
+                <UserIcon className="mr-2 h-4 w-4" />
+                Meu Perfil
+              </DropdownMenuItem>
               <DropdownMenuItem onClick={() => setCurrentPage('configuracoes')}>
                 <Settings className="mr-2 h-4 w-4" />
                 Configurações

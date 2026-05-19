@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { useTheme } from 'next-themes';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAppStore } from '@/lib/store';
 import { onAuthChange, fetchUserProfile, ensureUserProfile } from '@/lib/auth';
@@ -24,6 +25,7 @@ import InspecaoDiariaPage from '@/components/inspecao-diaria-page';
 import ProtocolosEmergenciaPage from '@/components/protocolos-emergencia-page';
 import DepartamentosPage from '@/components/departamentos-page';
 import EmpresasPage from '@/components/empresas-page';
+import PerfilPage from '@/components/perfil-page';
 import AppHeader from '@/components/app-header';
 import BottomNav from '@/components/bottom-nav';
 
@@ -42,6 +44,7 @@ function PageRenderer() {
     'lista-negra': <ListaNegraPage />,
     'achados-perdidos': <AchadosPerdidosPage />,
     configuracoes: <ConfiguracoesPage />,
+    perfil: <PerfilPage />,
     correspondencias: <CorrespondenciasPage />,
     veiculos: <VeiculosPage />,
     'pre-autorizacao': <PreAutorizacaoPage />,
@@ -69,7 +72,73 @@ function PageRenderer() {
 }
 
 export default function Home() {
-  const { isAuthenticated, currentPage, authInitialized, setAuthFromFirebase } = useAppStore();
+  const { isAuthenticated, currentPage, authInitialized, setAuthFromFirebase, settings } = useAppStore();
+  const { setTheme } = useTheme();
+
+  // ── Theme management and schedule synchronization ──
+  useEffect(() => {
+    const root = document.documentElement;
+
+    const checkTimeGlobal = () => {
+      if (settings.themePreference === 'dark-apex') {
+        setTheme('dark');
+        requestAnimationFrame(() => {
+          root.classList.add('dark-apex');
+        });
+        return;
+      }
+
+      if (!settings.autoTheme || settings.fixedTheme) {
+        // If not in auto mode, just ensure correct class based on themePreference
+        root.classList.remove('dark-apex');
+        if (settings.themePreference === 'dark') {
+          setTheme('dark');
+        } else if (settings.themePreference === 'light') {
+          setTheme('light');
+        }
+        return;
+      }
+
+      // Auto mode schedule calculation
+      const now = new Date();
+      const currentMinutes = now.getHours() * 60 + now.getMinutes();
+      const [startH, startM] = settings.darkModeStart.split(':').map(Number);
+      const [endH, endM] = settings.darkModeEnd.split(':').map(Number);
+      const startMinutes = startH * 60 + startM;
+      const endMinutes = endH * 60 + endM;
+      let isDarkTime: boolean;
+      if (startMinutes > endMinutes) {
+        isDarkTime = currentMinutes >= startMinutes || currentMinutes < endMinutes;
+      } else {
+        isDarkTime = currentMinutes >= startMinutes && currentMinutes < endMinutes;
+      }
+
+      root.classList.remove('dark-apex');
+      if (isDarkTime) {
+        const chosenDark = settings.autoDarkTheme || 'dark';
+        setTheme('dark');
+        if (chosenDark === 'dark-apex') {
+          requestAnimationFrame(() => {
+            root.classList.add('dark-apex');
+          });
+        }
+      } else {
+        setTheme('light');
+      }
+    };
+
+    checkTimeGlobal();
+    const interval = setInterval(checkTimeGlobal, 60000);
+    return () => clearInterval(interval);
+  }, [
+    settings.themePreference,
+    settings.autoTheme,
+    settings.fixedTheme,
+    settings.darkModeStart,
+    settings.darkModeEnd,
+    settings.autoDarkTheme,
+    setTheme
+  ]);
 
   // ── Firebase Auth State Observer ──
   // Restores session on page refresh (persists login via Firebase Auth)

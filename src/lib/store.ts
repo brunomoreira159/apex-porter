@@ -114,9 +114,11 @@ import type { Unsubscribe } from './firestore';
 
 interface AppSettings {
   autoTheme: boolean;
+  themePreference?: 'light' | 'dark' | 'dark-apex' | 'auto';
   darkModeStart: string;
   darkModeEnd: string;
   fixedTheme: boolean;
+  autoDarkTheme?: 'dark' | 'dark-apex';
 }
 
 // ── System config (loaded from Firestore config collection) ──
@@ -451,6 +453,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         nome: profile?.nome || firebaseUser.displayName || email.split('@')[0],
         email: firebaseUser.email || email,
         cargo: 'Porteiro',
+        dataCadastro: firebaseUser.metadata.creationTime || new Date().toISOString(),
       };
       set({ isAuthenticated: true, user, authLoading: false, currentPage: 'dashboard' });
       // Start Firestore real-time subscriptions
@@ -473,6 +476,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         nome,
         email: firebaseUser.email || email,
         cargo: cargo || 'Porteiro',
+        dataCadastro: firebaseUser.metadata.creationTime || new Date().toISOString(),
       };
       set({ isAuthenticated: true, user, authLoading: false, currentPage: 'dashboard' });
       // Start Firestore real-time subscriptions
@@ -531,6 +535,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       nome: firestoreData?.nome || firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'Usuário',
       email: firebaseUser.email || '',
       cargo: 'Porteiro',
+      dataCadastro: firebaseUser.metadata.creationTime || new Date().toISOString(),
     };
     set({ isAuthenticated: true, user, authInitialized: true, authLoading: false });
     // Update ultimoLogin in Firestore (non-blocking)
@@ -1055,9 +1060,11 @@ export const useAppStore = create<AppState>((set, get) => ({
   // Settings (synced with Firestore usuarios/{uid}/settings)
   settings: {
     autoTheme: false,
+    themePreference: 'light',
     darkModeStart: '18:00',
     darkModeEnd: '06:00',
     fixedTheme: false,
+    autoDarkTheme: 'dark',
   },
   updateSettings: (newSettings) => {
     set((state) => ({

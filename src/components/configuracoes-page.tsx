@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useTheme } from 'next-themes';
 import {
@@ -10,10 +10,6 @@ import {
   Clock,
   LogOut,
   Info,
-  User,
-  Save,
-  Pencil,
-  Database,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -21,40 +17,13 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { useAppStore } from '@/lib/store';
-import { seedFirestore } from '@/lib/seed-firestore';
 import { toast } from 'sonner';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export default function ConfiguracoesPage() {
-  const { user, updateUser, logout, settings, updateSettings } = useAppStore();
+  const { user, logout, settings, updateSettings } = useAppStore();
   const { resolvedTheme, setTheme } = useTheme();
-  const [seedLoading, setSeedLoading] = useState(false);
-
-  // Profile editing state
-  const [isEditing, setIsEditing] = useState(false);
-  const [editNome, setEditNome] = useState(user?.nome || '');
-  const [editEmail, setEditEmail] = useState(user?.email || '');
-  const [editCargo, setEditCargo] = useState(user?.cargo || '');
-
-  useEffect(() => {
-    if (user) {
-      setEditNome(user.nome || '');
-      setEditEmail(user.email || '');
-      setEditCargo(user.cargo || '');
-    }
-  }, [user]);
-
-  const handleSaveProfile = () => {
-    if (!editNome.trim()) {
-      toast.error('O nome é obrigatório');
-      return;
-    }
-    // Email is managed by Firebase Auth — only update nome and cargo
-    updateUser({ nome: editNome.trim(), cargo: editCargo.trim() });
-    setIsEditing(false);
-    toast.success('Perfil atualizado com sucesso!');
-  };
 
   const checkTime = useCallback(() => {
     if (!settings.autoTheme || settings.fixedTheme) return;
@@ -70,8 +39,22 @@ export default function ConfiguracoesPage() {
     } else {
       isDarkTime = currentMinutes >= startMinutes && currentMinutes < endMinutes;
     }
-    setTheme(isDarkTime ? 'dark' : 'light');
-  }, [settings.autoTheme, settings.fixedTheme, settings.darkModeStart, settings.darkModeEnd, setTheme]);
+
+    const root = document.documentElement;
+    root.classList.remove('dark-apex');
+
+    if (isDarkTime) {
+      const chosenDark = settings.autoDarkTheme || 'dark';
+      setTheme('dark');
+      if (chosenDark === 'dark-apex') {
+        requestAnimationFrame(() => {
+          root.classList.add('dark-apex');
+        });
+      }
+    } else {
+      setTheme('light');
+    }
+  }, [settings.autoTheme, settings.fixedTheme, settings.darkModeStart, settings.darkModeEnd, settings.autoDarkTheme, setTheme]);
 
   // Auto theme switching logic
   useEffect(() => {
@@ -83,17 +66,22 @@ export default function ConfiguracoesPage() {
 
   const theme = resolvedTheme || 'light';
 
-  const initials = user?.nome
-    ? user.nome
-        .split(' ')
-        .map((n) => n[0])
-        .join('')
-        .toUpperCase()
-        .slice(0, 2)
-    : 'US';
-
   const handleThemeChange = (newTheme: string) => {
-    setTheme(newTheme);
+    const root = document.documentElement;
+    // Always remove dark-apex class first
+    root.classList.remove('dark-apex');
+
+    if (newTheme === 'dark-apex') {
+      // For dark-apex: set next-themes to 'dark' so dark: utilities work,
+      // then add 'dark-apex' class to override CSS variables with our custom palette
+      setTheme('dark');
+      // Small delay to ensure next-themes has applied 'dark' first
+      requestAnimationFrame(() => {
+        root.classList.add('dark-apex');
+      });
+    } else {
+      setTheme(newTheme);
+    }
   };
 
   return (
@@ -109,105 +97,6 @@ export default function ConfiguracoesPage() {
         </p>
       </div>
 
-      {/* User Profile */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <User className="h-4 w-4" />
-            Perfil do Porteiro
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center gap-3">
-            <Avatar className="h-14 w-14">
-              <AvatarFallback className="bg-primary text-primary-foreground text-xl">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-            <div className="flex-1 min-w-0">
-              <p className="font-semibold text-base truncate">{user?.nome || 'Usuário'}</p>
-              <p className="text-sm text-muted-foreground truncate">{user?.email || ''}</p>
-              {user?.cargo && (
-                <p className="text-xs text-muted-foreground">{user.cargo}</p>
-              )}
-            </div>
-            {!isEditing && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setIsEditing(true)}
-                className="shrink-0"
-              >
-                <Pencil className="h-4 w-4 mr-1" />
-                Editar
-              </Button>
-            )}
-          </div>
-
-          {isEditing && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: 'auto' }}
-              exit={{ opacity: 0, height: 0 }}
-              className="space-y-3 pt-2"
-            >
-              <div className="space-y-2">
-                <Label htmlFor="editNome">Nome *</Label>
-                <Input
-                  id="editNome"
-                  value={editNome}
-                  onChange={(e) => setEditNome(e.target.value)}
-                  placeholder="Seu nome completo"
-                  className="text-base"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="editEmail">Email</Label>
-                <Input
-                  id="editEmail"
-                  type="email"
-                  value={editEmail}
-                  readOnly
-                  className="text-base opacity-60 cursor-not-allowed"
-                  title="Email é gerenciado pelo Firebase e não pode ser alterado aqui"
-                />
-                <p className="text-xs text-muted-foreground">Email gerenciado pela conta Firebase</p>
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="editCargo">Cargo</Label>
-                <Input
-                  id="editCargo"
-                  value={editCargo}
-                  onChange={(e) => setEditCargo(e.target.value)}
-                  placeholder="Ex: Porteiro, Vigilante..."
-                />
-              </div>
-              <div className="flex gap-2 pt-1">
-                <Button
-                  onClick={handleSaveProfile}
-                  className="bg-emerald-600 hover:bg-emerald-700 flex-1"
-                >
-                  <Save className="h-4 w-4 mr-1" />
-                  Salvar
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => {
-                    setIsEditing(false);
-                    setEditNome(user?.nome || '');
-                    setEditEmail(user?.email || '');
-                    setEditCargo(user?.cargo || '');
-                  }}
-                  className="flex-1"
-                >
-                  Cancelar
-                </Button>
-              </div>
-            </motion.div>
-          )}
-        </CardContent>
-      </Card>
-
       {/* Theme Settings */}
       <Card>
         <CardHeader className="pb-3">
@@ -218,33 +107,46 @@ export default function ConfiguracoesPage() {
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Theme Selection */}
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
             <Button
-              variant={theme === 'light' ? 'default' : 'outline'}
-              className={`h-16 flex-col gap-1 ${
-                theme === 'light' ? 'bg-emerald-600 hover:bg-emerald-700' : ''
-              }`}
-              onClick={() => handleThemeChange('light')}
+              variant={!settings.autoTheme && settings.themePreference === 'light' ? 'default' : 'outline'}
+              className={`h-16 flex-col gap-1 ${!settings.autoTheme && settings.themePreference === 'light' ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`}
+              onClick={() => {
+                updateSettings({ autoTheme: false, themePreference: 'light' });
+                handleThemeChange('light');
+              }}
             >
               <Sun className="h-5 w-5" />
               <span className="text-xs">Claro</span>
             </Button>
             <Button
-              variant={theme === 'dark' ? 'default' : 'outline'}
-              className={`h-16 flex-col gap-1 ${
-                theme === 'dark' ? 'bg-emerald-600 hover:bg-emerald-700' : ''
-              }`}
-              onClick={() => handleThemeChange('dark')}
+              variant={!settings.autoTheme && settings.themePreference === 'dark' ? 'default' : 'outline'}
+              className={`h-16 flex-col gap-1 ${!settings.autoTheme && settings.themePreference === 'dark' ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`}
+              onClick={() => {
+                updateSettings({ autoTheme: false, themePreference: 'dark' });
+                handleThemeChange('dark');
+              }}
             >
               <Moon className="h-5 w-5" />
               <span className="text-xs">Escuro</span>
             </Button>
             <Button
-              variant="outline"
-              className="h-16 flex-col gap-1"
+              variant={!settings.autoTheme && settings.themePreference === 'dark-apex' ? 'default' : 'outline'}
+              className={`h-16 flex-col gap-1 ${!settings.autoTheme && settings.themePreference === 'dark-apex' ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`}
               onClick={() => {
-                updateSettings({ autoTheme: !settings.autoTheme });
-                toast.success(settings.autoTheme ? 'Modo automático desativado' : 'Modo automático ativado');
+                updateSettings({ autoTheme: false, themePreference: 'dark-apex' });
+                handleThemeChange('dark-apex');
+              }}
+            >
+              <Moon className="h-5 w-5" />
+              <span className="text-xs">Escuro APEX</span>
+            </Button>
+            <Button
+              variant={settings.autoTheme ? 'default' : 'outline'}
+              className={`h-16 flex-col gap-1 ${settings.autoTheme ? 'bg-emerald-600 hover:bg-emerald-700' : ''}`}
+              onClick={() => {
+                updateSettings({ autoTheme: true, themePreference: 'auto' });
+                toast.success('Modo automático ativado');
               }}
             >
               <Monitor className="h-5 w-5" />
@@ -272,8 +174,88 @@ export default function ConfiguracoesPage() {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: 'auto' }}
                 exit={{ opacity: 0, height: 0 }}
-                className="space-y-3 pl-0"
+                className="space-y-4 pl-0"
               >
+                <div className="space-y-2.5 border-b pb-3 mb-2">
+                  <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Temas ativos no Automático</Label>
+                  <div className="grid grid-cols-1 gap-2">
+                    {/* Claro (implicitly always part of the automatic cycle) */}
+                    <div className="flex items-center space-x-3 rounded-lg border p-2.5 bg-muted/30 dark:bg-muted/10 opacity-75">
+                      <Checkbox checked disabled id="auto-theme-claro" />
+                      <div className="grid gap-0.5 leading-none">
+                        <label
+                          htmlFor="auto-theme-claro"
+                          className="text-xs font-medium cursor-not-allowed text-foreground"
+                        >
+                          Claro (Dia)
+                        </label>
+                        <span className="text-[10px] text-muted-foreground">
+                          Tema padrão fora do horário noturno.
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Escuro (Night option 1) */}
+                    <div 
+                      className={`flex items-center space-x-3 rounded-lg border p-2.5 transition-all cursor-pointer ${
+                        settings.autoDarkTheme === 'dark' 
+                          ? 'border-emerald-500/50 bg-emerald-500/5 dark:bg-emerald-500/10' 
+                          : 'hover:bg-muted/30'
+                      }`}
+                      onClick={() => {
+                        updateSettings({ autoDarkTheme: 'dark' });
+                        toast.success('Tema Escuro padrão ativado para a noite');
+                      }}
+                    >
+                      <Checkbox 
+                        id="auto-theme-escuro" 
+                        checked={settings.autoDarkTheme === 'dark'}
+                        onCheckedChange={() => {}} // onClick on container handles this cleanly
+                      />
+                      <div className="grid gap-0.5 leading-none">
+                        <label
+                          htmlFor="auto-theme-escuro"
+                          className="text-xs font-medium cursor-pointer text-foreground"
+                        >
+                          Escuro (Noite)
+                        </label>
+                        <span className="text-[10px] text-muted-foreground">
+                          Tons de verde e cinza clássico escuro.
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Escuro APEX (Night option 2) */}
+                    <div 
+                      className={`flex items-center space-x-3 rounded-lg border p-2.5 transition-all cursor-pointer ${
+                        settings.autoDarkTheme === 'dark-apex' 
+                          ? 'border-emerald-500/50 bg-emerald-500/5 dark:bg-emerald-500/10' 
+                          : 'hover:bg-muted/30'
+                      }`}
+                      onClick={() => {
+                        updateSettings({ autoDarkTheme: 'dark-apex' });
+                        toast.success('Tema Escuro APEX ativado para a noite');
+                      }}
+                    >
+                      <Checkbox 
+                        id="auto-theme-escuro-apex" 
+                        checked={settings.autoDarkTheme === 'dark-apex'}
+                        onCheckedChange={() => {}} // onClick on container handles this cleanly
+                      />
+                      <div className="grid gap-0.5 leading-none">
+                        <label
+                          htmlFor="auto-theme-escuro-apex"
+                          className="text-xs font-medium cursor-pointer text-foreground"
+                        >
+                          Escuro APEX (Noite)
+                        </label>
+                        <span className="text-[10px] text-muted-foreground">
+                          Tons azul-marinho profundos premium.
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 <div className="flex items-center justify-between">
                   <Label className="text-sm flex items-center gap-2">
                     <Clock className="h-3 w-3" />
@@ -311,55 +293,6 @@ export default function ConfiguracoesPage() {
               </motion.div>
             )}
           </div>
-        </CardContent>
-      </Card>
-
-      {/* Database Admin */}
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-sm font-medium flex items-center gap-2">
-            <Database className="h-4 w-4" />
-            Banco de Dados
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <p className="text-xs text-muted-foreground">
-            Popule o Firestore com os dados iniciais (empresas, departamentos, pessoas e ramais). Itens já existentes serão mantidos.
-          </p>
-          <Button
-            variant="outline"
-            className="w-full"
-            disabled={seedLoading}
-            onClick={async () => {
-              setSeedLoading(true);
-              try {
-                const result = await seedFirestore();
-                if (result.success) {
-                  const totalAdded = Object.values(result.results).reduce((sum, r) => sum + r.added, 0);
-                  const totalSkipped = Object.values(result.results).reduce((sum, r) => sum + r.skipped, 0);
-                  toast.success(`Seed concluído: ${totalAdded} adicionados, ${totalSkipped} já existiam`);
-                } else {
-                  toast.error(result.error || 'Erro ao popular banco de dados');
-                }
-              } catch (err) {
-                toast.error('Erro ao popular banco de dados');
-              } finally {
-                setSeedLoading(false);
-              }
-            }}
-          >
-            {seedLoading ? (
-              <span className="flex items-center gap-2">
-                <span className="w-4 h-4 border-2 border-muted-foreground/30 border-t-muted-foreground rounded-full animate-spin" />
-                Populando...
-              </span>
-            ) : (
-              <>
-                <Database className="h-4 w-4 mr-2" />
-                Popular Banco com Dados Iniciais
-              </>
-            )}
-          </Button>
         </CardContent>
       </Card>
 

@@ -21,7 +21,8 @@ export type PageType =
   | 'checklist-turno'
   | 'inspecao-diaria'
   | 'protocolos-emergencia'
-  | 'configuracoes';
+  | 'configuracoes'
+  | 'perfil';
 
 export type CategoriaFluxo =
   | 'entregas1'
@@ -263,6 +264,7 @@ export interface User {
   nome: string;
   email: string;
   cargo?: string;
+  dataCadastro?: string;
 }
 
 // ── Veículos ──

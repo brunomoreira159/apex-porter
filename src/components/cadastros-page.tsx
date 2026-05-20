@@ -543,7 +543,7 @@ export default function CadastrosPage() {
               exit={{ height: 0, opacity: 0 }}
               className="overflow-hidden"
             >
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-muted/30 border rounded-lg mt-1">
+              <div className="grid grid-cols-3 gap-2 p-3 bg-muted/30 border rounded-lg mt-1">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Status</Label>
                   <Select value={filterStatus} onValueChange={(v: any) => setFilterStatus(v)}>

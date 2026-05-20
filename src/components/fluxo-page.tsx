@@ -2,7 +2,7 @@
 
 import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Plus, Search, LogOut, Inbox, Clock, ArrowRightLeft, User, Building2, Truck, Scale, Package, Calendar, FileText, AlertTriangle, Users, Mail, TrendingUp, RotateCcw } from 'lucide-react';
+import { Plus, Search, LogOut, Inbox, Clock, ArrowRightLeft, User, Building2, Truck, Scale, Package, Calendar, FileText, AlertTriangle, Users, Mail, TrendingUp, RotateCcw, X, SlidersHorizontal, PlusCircle, MessageSquare } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
@@ -55,22 +55,33 @@ function getMainField(r: RegistroFluxo): string {
   }
 }
 
+function formatRgCpfField(doc?: string): { label: string; value: string } {
+  if (!doc) return { label: 'RG/CPF', value: '-' };
+  const digits = doc.replace(/\D/g, '');
+  if (digits.length === 11) {
+    return { label: 'CPF', value: digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4') };
+  } else if (digits.length > 0) {
+    return { label: 'RG', value: digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.') };
+  }
+  return { label: 'RG/CPF', value: doc };
+}
+
 function getSecondaryFields(r: RegistroFluxo): { label: string; value: string }[] {
   switch (r.categoria) {
     case 'entregas1':
       return [
         { label: 'Empresa', value: r.empresa },
-        { label: 'RG/CPF', value: r.rgCpf },
+        formatRgCpfField(r.rgCpf),
       ];
     case 'visitantes':
       return [
         { label: 'Departamento', value: r.departamento },
-        { label: 'RG/CPF', value: r.rgCpf },
+        formatRgCpfField(r.rgCpf),
       ];
     case 'prestadores':
       return [
         { label: 'Departamento', value: r.departamento },
-        { label: 'RG/CPF', value: r.rgCpf },
+        formatRgCpfField(r.rgCpf),
       ];
     case 'pesagem':
       return [
@@ -82,17 +93,17 @@ function getSecondaryFields(r: RegistroFluxo): { label: string; value: string }[
       return [
         { label: 'Empresa', value: r.empresa },
         { label: 'Departamento', value: r.departamento },
-        { label: 'CPF/RG', value: r.cpfRg },
+        formatRgCpfField(r.cpfRg),
       ];
     case 'coleta':
       return [
         { label: 'Empresa', value: r.empresa },
         { label: 'Placa', value: r.placa },
-        { label: 'RG/CPF', value: r.rgCpf },
+        formatRgCpfField(r.rgCpf),
       ];
     case 'movimentacao':
       return [
-        { label: 'RG/CPF', value: r.rgCpf },
+        formatRgCpfField(r.rgCpf),
         { label: 'Autorizado por', value: r.autorizadoPor },
         { label: 'Porteiro', value: r.porteiro },
       ];
@@ -115,17 +126,19 @@ function getAllFields(r: RegistroFluxo): { label: string; value: string }[] {
     case 'entregas1':
       base.push({ label: 'Nome', value: r.nome });
       base.push({ label: 'Empresa', value: r.empresa });
-      base.push({ label: 'RG/CPF', value: r.rgCpf });
+      base.push(formatRgCpfField(r.rgCpf));
       break;
     case 'visitantes':
-      base.push({ label: 'Nome / Empresa', value: r.nomeEmpresa });
+      base.push({ label: 'Nome', value: (r as any).nome || r.nomeEmpresa.split(' / ')[0] || r.nomeEmpresa });
+      base.push({ label: 'Empresa', value: (r as any).empresa || r.nomeEmpresa.split(' / ')[1] || '' });
       base.push({ label: 'Departamento', value: r.departamento });
-      base.push({ label: 'RG/CPF', value: r.rgCpf });
+      base.push(formatRgCpfField(r.rgCpf));
       break;
     case 'prestadores':
-      base.push({ label: 'Nome / Empresa', value: r.nomeEmpresa });
+      base.push({ label: 'Nome', value: (r as any).nome || r.nomeEmpresa.split(' / ')[0] || r.nomeEmpresa });
+      base.push({ label: 'Empresa', value: (r as any).empresa || r.nomeEmpresa.split(' / ')[1] || '' });
       base.push({ label: 'Departamento', value: r.departamento });
-      base.push({ label: 'RG/CPF', value: r.rgCpf });
+      base.push(formatRgCpfField(r.rgCpf));
       break;
     case 'pesagem':
       base.push({ label: 'Empresa', value: r.empresa });
@@ -136,7 +149,7 @@ function getAllFields(r: RegistroFluxo): { label: string; value: string }[] {
       break;
     case 'entregas2':
       base.push({ label: 'Motorista', value: r.motorista });
-      base.push({ label: 'CPF/RG', value: r.cpfRg });
+      base.push(formatRgCpfField(r.cpfRg));
       base.push({ label: 'Empresa', value: r.empresa });
       base.push({ label: 'Departamento', value: r.departamento });
       break;
@@ -144,11 +157,11 @@ function getAllFields(r: RegistroFluxo): { label: string; value: string }[] {
       base.push({ label: 'Empresa', value: r.empresa });
       base.push({ label: 'Motorista', value: r.motorista });
       base.push({ label: 'Placa', value: r.placa });
-      base.push({ label: 'RG/CPF', value: r.rgCpf });
+      base.push(formatRgCpfField(r.rgCpf));
       break;
     case 'movimentacao':
       base.push({ label: 'Nome do Colaborador', value: r.nomeColaborador });
-      base.push({ label: 'RG/CPF', value: r.rgCpf });
+      base.push(formatRgCpfField(r.rgCpf));
       base.push({ label: 'Autorizado Por', value: r.autorizadoPor });
       base.push({ label: 'Assinatura Colaborador', value: r.assinaturaColaborador });
       base.push({ label: 'Porteiro', value: r.porteiro });
@@ -184,17 +197,36 @@ export default function FluxoPage() {
     categoriaAtiva,
     setCategoriaAtiva,
     registrosFluxo,
+    rascunhosFluxo,
     registrarSaida,
     inativarRegistroFluxo,
     buscaFluxo,
     setBuscaFluxo,
     user,
+    departamentos,
+    empresas,
+    addEmpresa,
   } = useAppStore();
   const [modalOpen, setModalOpen] = useState(false);
   const [modalCategoria, setModalCategoria] = useState<CategoriaFluxo>(
     categoriaAtiva === 'todos' ? 'visitantes' : categoriaAtiva
   );
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('aberto');
+  const [ordenacao, setOrdenacao] = useState<'mais_recentes' | 'mais_antigos'>('mais_recentes');
+
+  // New Filters
+  const [filtroDepartamento, setFiltroDepartamento] = useState<string>('todos');
+  const [filtroEmpresa, setFiltroEmpresa] = useState<string>('todos');
+  const [filtroData, setFiltroData] = useState<string>('');
+
+  const [showFilters, setShowFilters] = useState(false);
+
+  const hasActiveFilters = 
+    categoriaAtiva !== 'todos' || 
+    ordenacao !== 'mais_recentes' || 
+    filtroDepartamento !== 'todos' || 
+    filtroEmpresa !== 'todos' || 
+    filtroData !== '';
 
   // Detail modal state
   const [detailModalOpen, setDetailModalOpen] = useState(false);
@@ -207,12 +239,66 @@ export default function FluxoPage() {
   const [registroRefacao, setRegistroRefacao] = useState<RegistroFluxo | null>(null);
   const [isRefacao, setIsRefacao] = useState(false);
 
+  const [isRascunhoEditing, setIsRascunhoEditing] = useState(false);
+  const [mensagemLiberacao, setMensagemLiberacao] = useState<string | null>(null);
+
+  // Cadastrar Empresa quick modal
+  const [cadastrarEmpresaOpen, setCadastrarEmpresaOpen] = useState(false);
+  const [novaEmpresaNome, setNovaEmpresaNome] = useState('');
+  const [cadastrandoEmpresa, setCadastrandoEmpresa] = useState(false);
+
+  const handleCadastrarEmpresa = () => {
+    const nome = novaEmpresaNome.trim();
+    if (!nome) return;
+    setCadastrandoEmpresa(true);
+    const id = `emp_${Date.now()}`;
+    addEmpresa({ id, nome });
+    toast.success(`Empresa "${nome}" cadastrada com sucesso!`);
+    setCadastrarEmpresaOpen(false);
+    setNovaEmpresaNome('');
+    setCadastrandoEmpresa(false);
+  };
+
+  const getEmpresaDoRegistro = (registro: RegistroFluxo): string => {
+    if ((registro as any).empresa) return (registro as any).empresa;
+    if ('nomeEmpresa' in registro) {
+      const partes = (registro as any).nomeEmpresa?.split(' / ');
+      return partes?.[1] || partes?.[0] || '';
+    }
+    return '';
+  };
+
+  const empresaExisteNaColecao = (nomeEmpresa: string): boolean => {
+    if (!nomeEmpresa) return true;
+    return empresas.some(
+      (e) => e.nome.toLowerCase().trim() === nomeEmpresa.toLowerCase().trim()
+    );
+  };
+
   useEffect(() => {
     setCategoriaAtiva('todos');
   }, [setCategoriaAtiva]);
 
+  const departamentoOptions = useMemo(() => {
+    const set = new Set<string>();
+    departamentos.forEach((d) => set.add(d.nome));
+    registrosFluxo.forEach((r) => {
+      if ('departamento' in r && r.departamento) set.add(r.departamento);
+    });
+    return Array.from(set).sort();
+  }, [departamentos, registrosFluxo]);
+
+  const empresaOptions = useMemo(() => {
+    const set = new Set<string>();
+    empresas.forEach((e) => set.add(e.nome));
+    registrosFluxo.forEach((r) => {
+      if ('empresa' in r && r.empresa) set.add(r.empresa);
+    });
+    return Array.from(set).sort();
+  }, [empresas, registrosFluxo]);
+
   const filteredRegistros = useMemo(() => {
-    return registrosFluxo.filter((r) => {
+    let result = [...rascunhosFluxo, ...registrosFluxo].filter((r) => {
       if (categoriaAtiva !== 'todos' && r.categoria !== categoriaAtiva) return false;
       const hasSaida = 'horarioSaida' in r && r.horarioSaida !== '';
       if (statusFilter === 'aberto' && hasSaida) return false;
@@ -222,18 +308,64 @@ export default function FluxoPage() {
         const fields = Object.values(r).filter((v) => typeof v === 'string');
         return fields.some((v) => v.toLowerCase().includes(search));
       }
+
+      if (filtroDepartamento !== 'todos') {
+        const d = ('departamento' in r) ? (r as any).departamento : '';
+        if (d !== filtroDepartamento) return false;
+      }
+      if (filtroEmpresa !== 'todos') {
+        const e = ('empresa' in r) ? (r as any).empresa : '';
+        if (e !== filtroEmpresa) return false;
+      }
+      if (filtroData) {
+        const [ano, mes, dia] = filtroData.split('-');
+        const formattedDate = `${dia}/${mes}/${ano}`;
+        if (r.data !== formattedDate) return false;
+      }
+
       return true;
     });
-  }, [registrosFluxo, categoriaAtiva, buscaFluxo, statusFilter]);
+
+    result.sort((a, b) => {
+      try {
+        const [diaA, mesA, anoA] = a.data.split('/');
+        const [horaA, minA] = a.horarioEntrada.split(':');
+        const dateA = new Date(Number(anoA), Number(mesA) - 1, Number(diaA), Number(horaA) || 0, Number(minA) || 0).getTime();
+
+        const [diaB, mesB, anoB] = b.data.split('/');
+        const [horaB, minB] = b.horarioEntrada.split(':');
+        const dateB = new Date(Number(anoB), Number(mesB) - 1, Number(diaB), Number(horaB) || 0, Number(minB) || 0).getTime();
+
+        if (ordenacao === 'mais_recentes') {
+          return dateB - dateA;
+        } else {
+          return dateA - dateB;
+        }
+      } catch (e) {
+        return 0;
+      }
+    });
+
+    return result;
+  }, [registrosFluxo, rascunhosFluxo, categoriaAtiva, buscaFluxo, statusFilter, ordenacao, filtroDepartamento, filtroEmpresa, filtroData]);
 
   const handleAddRegistro = () => {
     setRegistroRefacao(null);
     setIsRefacao(false);
+    setIsRascunhoEditing(false);
     setModalCategoria(categoriaAtiva === 'todos' ? 'visitantes' : categoriaAtiva);
     setModalOpen(true);
   };
 
   const handleOpenDetail = (r: RegistroFluxo) => {
+    if (r.isRascunho) {
+      setRegistroRefacao(r);
+      setIsRefacao(false);
+      setIsRascunhoEditing(true);
+      setModalCategoria(r.categoria);
+      setModalOpen(true);
+      return;
+    }
     setSelectedRegistro(r);
     setDetalhesSaida(r.detalhes || '');
     setOcorrenciaSaida(r.ocorrencia || '');
@@ -254,6 +386,51 @@ export default function FluxoPage() {
     setDetalhesSaida('');
     setOcorrenciaSaida('');
     setPesoSaidaInput('');
+  };
+
+  const closeModals = () => {
+    setModalOpen(false);
+    setDetailModalOpen(false);
+    setSelectedRegistro(null);
+    setPesoSaidaInput('');
+    setMensagemLiberacao(null);
+  };
+
+  const gerarMensagemLiberacao = (r: RegistroFluxo) => {
+    let nome = r.nome || (r as any).motorista || '';
+    if (r.categoria === 'visitantes' || r.categoria === 'prestadores') {
+       nome = (r as any).nome || r.nomeEmpresa?.split(' / ')[0] || r.nomeEmpresa || '';
+    }
+    const empresa = (r as any).empresa || r.empresa || r.nomeEmpresa?.split(' / ')[1] || '';
+    
+    // extrair doc
+    let doc = (r as any).rgCpf || (r as any).cpfRg || '';
+    let docLabel = 'RG/CPF';
+    let docValue = doc || '-';
+    if (doc) {
+      const digits = doc.replace(/\D/g, '');
+      if (digits.length === 11) {
+        docLabel = 'CPF';
+        docValue = digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+      } else if (digits.length > 0) {
+        docLabel = 'RG';
+        docValue = digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      }
+    }
+    
+    let acao = 'visita';
+    switch (r.categoria) {
+      case 'coleta': acao = 'coleta'; break;
+      case 'visitantes': acao = 'visita'; break;
+      case 'prestadores': acao = 'prestação de serviço'; break;
+      case 'entregas1':
+      case 'entregas2': acao = 'entrega'; break;
+      case 'pesagem': acao = 'pesagem'; break;
+      case 'correspondencias': acao = 'entrega de correspondência'; break;
+      default: acao = r.categoria;
+    }
+    
+    return `O senhor ${nome}, ${docLabel}: ${docValue}, pela empresa ${empresa} veio realizar ${acao}. Pode liberar?`;
   };
 
   const handleRefazer = (r: RegistroFluxo) => {
@@ -277,34 +454,121 @@ export default function FluxoPage() {
     >
       {/* Top section: Search + Filter */}
       <div className="p-4 md:p-6 pb-0 space-y-3">
-        {/* Search bar */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nome, placa, empresa..."
-            value={buscaFluxo}
-            onChange={(e) => setBuscaFluxo(e.target.value)}
-            className="pl-10 h-11 text-base bg-muted/50 border-0 focus-visible:ring-1"
-          />
+        {/* Search bar + Filter Toggle */}
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nome, placa, empresa..."
+              value={buscaFluxo}
+              onChange={(e) => setBuscaFluxo(e.target.value)}
+              className="pl-10 h-11 text-base bg-muted/50 border-0 focus-visible:ring-1"
+            />
+          </div>
+          <Button
+            variant={showFilters || hasActiveFilters ? "secondary" : "outline"}
+            className="relative h-11 w-11 shrink-0 p-0 border-0 bg-muted/50 hover:bg-muted"
+            onClick={() => setShowFilters(!showFilters)}
+          >
+            <SlidersHorizontal className={`h-5 w-5 ${hasActiveFilters ? 'text-primary' : 'text-muted-foreground'}`} />
+            {hasActiveFilters && !showFilters && (
+              <span className="absolute top-2 right-2 flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-primary"></span>
+              </span>
+            )}
+          </Button>
         </div>
 
-        {/* Category dropdown filter */}
-        <Select
-          value={categoriaAtiva}
-          onValueChange={(v) => setCategoriaAtiva(v as CategoriaFluxo | 'todos')}
-        >
-          <SelectTrigger className="h-11 text-base bg-muted/50 border-0">
-            <SelectValue placeholder="Todos os tipos" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="todos">Todos</SelectItem>
-            {CATEGORIAS_FLUXO.map((cat) => (
-              <SelectItem key={cat.value} value={cat.value}>
-                {cat.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        {/* Expandable Filters Area */}
+        {showFilters && (
+          <motion.div 
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: 'auto', opacity: 1 }}
+            className="space-y-3 overflow-hidden"
+          >
+            {/* Filters Row */}
+            <div className="flex flex-row items-center gap-2">
+              {/* Category dropdown filter */}
+              <Select
+                value={categoriaAtiva}
+                onValueChange={(v) => setCategoriaAtiva(v as CategoriaFluxo | 'todos')}
+              >
+                <SelectTrigger className="h-11 text-base bg-muted/50 border-0 flex-1">
+                  <SelectValue placeholder="Todos os tipos" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos</SelectItem>
+                  {CATEGORIAS_FLUXO.map((cat) => (
+                    <SelectItem key={cat.value} value={cat.value}>
+                      {cat.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              {/* Sort dropdown */}
+              <Select
+                value={ordenacao}
+                onValueChange={(v) => setOrdenacao(v as 'mais_recentes' | 'mais_antigos')}
+              >
+                <SelectTrigger className="h-11 text-base bg-muted/50 border-0 flex-1">
+                  <SelectValue placeholder="Ordenar" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="mais_recentes">Mais recentes</SelectItem>
+                  <SelectItem value="mais_antigos">Mais antigos</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Filters Row 2 - Extra Filters */}
+            <div className="flex flex-row items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+              <Select value={filtroDepartamento} onValueChange={setFiltroDepartamento}>
+                <SelectTrigger className="h-10 text-sm bg-muted/50 border-0 min-w-[140px] flex-1">
+                  <SelectValue placeholder="Departamento" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todos os Deptos</SelectItem>
+                  {departamentoOptions.map((d) => (
+                    <SelectItem key={d} value={d}>{d}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <Select value={filtroEmpresa} onValueChange={setFiltroEmpresa}>
+                <SelectTrigger className="h-10 text-sm bg-muted/50 border-0 min-w-[140px] flex-1">
+                  <SelectValue placeholder="Empresa" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="todos">Todas as Empresas</SelectItem>
+                  {empresaOptions.map((e) => (
+                    <SelectItem key={e} value={e}>{e}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+
+              <div className="relative flex-shrink-0 flex items-center">
+                <Input 
+                  type="date" 
+                  value={filtroData} 
+                  onChange={(e) => setFiltroData(e.target.value)} 
+                  className="h-10 text-sm bg-muted/50 border-0 pr-8"
+                />
+                {filtroData && (
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    className="absolute right-0 h-10 w-10 text-muted-foreground hover:text-foreground hover:bg-transparent"
+                    onClick={() => setFiltroData('')}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Status tabs */}
         <Tabs
@@ -375,19 +639,27 @@ export default function FluxoPage() {
                 <Card
                   key={r.id}
                   className={`cursor-pointer transition-colors active:scale-[0.98] ${
-                    isInactive ? 'opacity-60 bg-red-500/5 dark:bg-red-500/10 border-dashed border-red-500/30' : 'hover:bg-muted/50'
+                    r.isRascunho 
+                      ? 'bg-red-50 dark:bg-red-950/20 border-red-200 dark:border-red-900/50 hover:bg-red-100 dark:hover:bg-red-900/40' 
+                      : isInactive 
+                        ? 'opacity-60 bg-red-500/5 dark:bg-red-500/10 border-dashed border-red-500/30' 
+                        : 'hover:bg-muted/50'
                   }`}
                   onClick={() => handleOpenDetail(r)}
                 >
                   <CardContent className="p-3.5">
                     <div className="flex items-start gap-3">
                       <div className="p-2.5 rounded-xl bg-muted shrink-0">
-                        <CardIcon className="h-6 w-6 text-muted-foreground" />
+                        <CardIcon className={`h-6 w-6 ${r.isRascunho ? 'text-red-500' : 'text-muted-foreground'}`} />
                       </div>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className="font-bold text-lg truncate">{mainField}</h3>
-                          {isInactive ? (
+                          <h3 className={`font-bold text-lg truncate ${r.isRascunho ? 'text-red-700 dark:text-red-400' : ''}`}>{mainField}</h3>
+                          {r.isRascunho ? (
+                            <Badge variant="outline" className="text-red-600 bg-red-100 border-red-300 dark:bg-red-900/30 dark:border-red-800 text-xs px-1.5 py-0">
+                              Rascunho
+                            </Badge>
+                          ) : isInactive ? (
                             <Badge variant="outline" className="text-red-500 border-red-300 dark:border-red-800 text-xs px-1.5 py-0">
                               Inativo (Refeito)
                             </Badge>
@@ -428,6 +700,30 @@ export default function FluxoPage() {
                           </div>
                         )}
 
+                        {/* Porteiros */}
+                        {(porteiroEntrada || porteiroSaidaVal) && (
+                          <div className="mt-1 space-y-0.5">
+                            {porteiroEntrada === porteiroSaidaVal ? (
+                              <p className="text-base leading-snug text-muted-foreground">
+                                <span className="font-medium">PORTEIRO:</span> {porteiroEntrada}
+                              </p>
+                            ) : (
+                              <>
+                                {porteiroEntrada && (
+                                  <p className="text-base leading-snug text-muted-foreground">
+                                    <span className="font-medium">ENTRADA:</span> {porteiroEntrada}
+                                  </p>
+                                )}
+                                {porteiroSaidaVal && (
+                                  <p className="text-base leading-snug text-muted-foreground">
+                                    <span className="font-medium">SAÍDA:</span> {porteiroSaidaVal}
+                                  </p>
+                                )}
+                              </>
+                            )}
+                          </div>
+                        )}
+
                         <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-sm text-muted-foreground">
                           <span className="flex items-center gap-1.5">
                             <Calendar className="h-4 w-4" />
@@ -444,18 +740,6 @@ export default function FluxoPage() {
                             </span>
                           )}
                         </div>
-
-                        {/* Porteiros */}
-                        {(porteiroEntrada || porteiroSaidaVal) && (
-                          <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-muted-foreground/70">
-                            {porteiroEntrada && (
-                              <span>🔑 Entrada: <span className="font-medium text-muted-foreground">{porteiroEntrada}</span></span>
-                            )}
-                            {porteiroSaidaVal && (
-                              <span>🚪 Saída: <span className="font-medium text-muted-foreground">{porteiroSaidaVal}</span></span>
-                            )}
-                          </div>
-                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -484,6 +768,7 @@ export default function FluxoPage() {
         categoriaInicial={modalCategoria}
         registroInicial={registroRefacao}
         isRefacao={isRefacao}
+        isRascunho={isRascunhoEditing}
       />
 
       {/* Detail Modal */}
@@ -493,12 +778,23 @@ export default function FluxoPage() {
           onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 text-left">
               {selectedRegistro && (() => {
                 const RIcon = catIcons[selectedRegistro.categoria];
                 return <RIcon className="h-5 w-5 text-emerald-600" />;
               })()}
-              Detalhes do Registro
+              <span className="flex-1">Detalhes do Registro</span>
+              
+              {selectedRegistro && (
+                <button
+                  type="button"
+                  onClick={() => setMensagemLiberacao(gerarMensagemLiberacao(selectedRegistro))}
+                  className="p-1.5 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-md text-emerald-600 transition-colors mr-4"
+                  title="Gerar Mensagem de Liberação"
+                >
+                  <MessageSquare className="h-5 w-5" />
+                </button>
+              )}
             </DialogTitle>
           </DialogHeader>
 
@@ -524,12 +820,31 @@ export default function FluxoPage() {
                   <span className="font-semibold text-sm">Informações de Entrada</span>
                 </div>
                 <div className="bg-muted/50 rounded-xl p-4 space-y-2.5">
-                  {getAllFields(selectedRegistro).map((field) => (
-                    <div key={field.label} className="flex justify-between items-start gap-2">
-                      <span className="text-sm font-medium text-muted-foreground shrink-0">{field.label}</span>
-                      <span className="text-sm text-foreground text-right">{field.value || '-'}</span>
-                    </div>
-                  ))}
+                  {getAllFields(selectedRegistro).map((field) => {
+                    const isEmpresaField = field.label === 'Empresa';
+                    const empresaNome = isEmpresaField ? field.value : '';
+                    const jaExiste = isEmpresaField ? empresaExisteNaColecao(empresaNome) : true;
+                    return (
+                      <div key={field.label} className="flex justify-between items-start gap-2">
+                        <span className="text-sm font-medium text-muted-foreground shrink-0">{field.label}</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm text-foreground text-right">{field.value || '-'}</span>
+                          {isEmpresaField && field.value && !jaExiste && (
+                            <button
+                              onClick={() => {
+                                setNovaEmpresaNome(field.value);
+                                setCadastrarEmpresaOpen(true);
+                              }}
+                              className="flex items-center gap-0.5 text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors"
+                              title="Cadastrar empresa"
+                            >
+                              <PlusCircle className="h-4 w-4" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -671,6 +986,81 @@ export default function FluxoPage() {
               )}
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Cadastrar Empresa Quick Modal */}
+      <Dialog open={cadastrarEmpresaOpen} onOpenChange={(v) => { if (!v) { setCadastrarEmpresaOpen(false); setNovaEmpresaNome(''); } }}>
+        <DialogContent className="max-w-sm" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Building2 className="h-5 w-5 text-emerald-600" />
+              Cadastrar Empresa
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-2">
+            <p className="text-sm text-muted-foreground">
+              Esta empresa não está cadastrada na coleção. Você pode editar o nome abaixo antes de cadastrar.
+            </p>
+            <div className="space-y-1.5">
+              <Label htmlFor="nova-empresa-nome">Nome da Empresa</Label>
+              <Input
+                id="nova-empresa-nome"
+                value={novaEmpresaNome}
+                onChange={(e) => setNovaEmpresaNome(e.target.value)}
+                placeholder="Nome da empresa..."
+                className="text-base"
+                onKeyDown={(e) => { if (e.key === 'Enter') handleCadastrarEmpresa(); }}
+              />
+            </div>
+          </div>
+          <DialogFooter className="gap-2">
+            <Button
+              variant="outline"
+              onClick={() => { setCadastrarEmpresaOpen(false); setNovaEmpresaNome(''); }}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={handleCadastrarEmpresa}
+              disabled={!novaEmpresaNome.trim() || cadastrandoEmpresa}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            >
+              <Building2 className="h-4 w-4 mr-2" />
+              Cadastrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal Mensagem Liberação */}
+      <Dialog open={!!mensagemLiberacao} onOpenChange={(v) => { if (!v) setMensagemLiberacao(null); }}>
+        <DialogContent className="max-w-sm" onOpenAutoFocus={(e) => e.preventDefault()}>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-left">
+              <MessageSquare className="h-5 w-5 text-emerald-600" />
+              Mensagem de Liberação
+            </DialogTitle>
+          </DialogHeader>
+          <div className="py-4">
+            <div className="bg-muted p-3 rounded-md text-sm text-foreground whitespace-pre-wrap select-all">
+              {mensagemLiberacao}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              className="w-full bg-emerald-600 hover:bg-emerald-700 text-white"
+              onClick={() => {
+                if (mensagemLiberacao) {
+                  navigator.clipboard.writeText(mensagemLiberacao);
+                  toast.success('Mensagem copiada para a área de transferência!');
+                  setMensagemLiberacao(null);
+                }
+              }}
+            >
+              Copiar e Fechar
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </motion.div>

@@ -162,6 +162,7 @@ interface RegistroModalProps {
   categoriaInicial?: CategoriaFluxo;
   registroInicial?: RegistroFluxo | null;
   isRefacao?: boolean;
+  isRascunho?: boolean;
 }
 
 export default function RegistroModal({
@@ -170,8 +171,14 @@ export default function RegistroModal({
   categoriaInicial,
   registroInicial,
   isRefacao,
+  isRascunho,
 }: RegistroModalProps) {
-  const { addRegistroFluxo, inativarRegistroFluxo, pessoas, empresas, departamentos, ramais, registrosFluxo, user } = useAppStore();
+  const { addRegistroFluxo, inativarRegistroFluxo, pessoas, empresas, departamentos, ramais, registrosFluxo, user, addRascunhoFluxo, updateRascunhoFluxo, removeRascunhoFluxo, addEmpresa } = useAppStore();
+  const [isRascunhoEditing, setIsRascunhoEditing] = useState(false);
+  const [coletaMessage, setColetaMessage] = useState<string | null>(null);
+
+  // Cadastrar Empresa quick modal
+  const [cadastrarEmpresaOpen, setCadastrarEmpresaOpen] = useState(false);
   const [categoria, setCategoria] = useState<CategoriaFluxo | ''>('');
   const [formData, setFormData] = useState<Record<string, string>>(() => ({
     data: format(new Date(), 'dd/MM/yyyy'),
@@ -245,19 +252,21 @@ export default function RegistroModal({
 
       if (map.has(key)) {
         const existing = map.get(key)!;
+        // Only upgrade sublabel if existing has none
         map.set(key, {
           data: mergeUnified(existing.data, unified),
           sublabel: existing.sublabel || unified.company,
         });
       } else {
         const sublabel = unified.company || unified.department || '';
-        map.set(key, { data: unified, sublabel });
+        map.set(key, { data: { ...unified, origin: 'historico' }, sublabel });
       }
     });
 
     return Array.from(map.entries()).map(([label, { data, sublabel }]) => ({
       label,
       sublabel: sublabel || undefined,
+      origin: (data.origin as 'cadastro' | 'historico' | undefined),
       data: data as unknown as Record<string, string>,
     }));
   }, [pessoas, ramais, registrosFluxo]);
@@ -305,13 +314,14 @@ export default function RegistroModal({
         });
       } else {
         const sublabel = unified.name || '';
-        map.set(key, { data: unified, sublabel });
+        map.set(key, { data: { ...unified, origin: 'historico' }, sublabel });
       }
     });
 
     return Array.from(map.entries()).map(([label, { data, sublabel }]) => ({
       label,
       sublabel: sublabel || undefined,
+      origin: (data.origin as 'cadastro' | 'historico' | undefined),
       data: data as unknown as Record<string, string>,
     }));
   }, [empresas, pessoas, registrosFluxo]);
@@ -350,13 +360,14 @@ export default function RegistroModal({
         });
       } else {
         const sublabel = unified.name || '';
-        map.set(doc, { data: unified, sublabel });
+        map.set(doc, { data: { ...unified, origin: 'historico' }, sublabel });
       }
     });
 
     return Array.from(map.entries()).map(([label, { data, sublabel }]) => ({
       label,
       sublabel: sublabel || undefined,
+      origin: (data.origin as 'cadastro' | 'historico' | undefined),
       data: data as unknown as Record<string, string>,
     }));
   }, [pessoas, registrosFluxo]);
@@ -395,13 +406,14 @@ export default function RegistroModal({
         });
       } else {
         const sublabel = [unified.name, unified.company].filter(Boolean).join(' — ');
-        map.set(plate, { data: unified, sublabel });
+        map.set(plate, { data: { ...unified, origin: 'historico' }, sublabel });
       }
     });
 
     return Array.from(map.entries()).map(([label, { data, sublabel }]) => ({
       label,
       sublabel: sublabel || undefined,
+      origin: (data.origin as 'cadastro' | 'historico' | undefined),
       data: data as unknown as Record<string, string>,
     }));
   }, [pessoas, registrosFluxo]);
@@ -441,19 +453,82 @@ export default function RegistroModal({
 
   const handleCategoriaChange = (v: string) => {
     setCategoria(v as CategoriaFluxo);
-    setFormData({
-      data: format(new Date(), 'dd/MM/yyyy'),
-      horarioEntrada: format(new Date(), 'HH:mm'),
-      porteiro: user?.nome || '',
-    });
+    // Preserva os dados do formulário
+    setFormData((prev) => ({
+      ...prev,
+      data: prev.data || format(new Date(), 'dd/MM/yyyy'),
+      horarioEntrada: prev.horarioEntrada || format(new Date(), 'HH:mm'),
+      porteiro: prev.porteiro || user?.nome || '',
+    }));
   };
 
   const updateField = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleSaveDraft = () => {
+    if (!categoria) {
+      toast.error('Selecione uma categoria para salvar rascunho');
+      return;
+    }
+
+    const id = (isRascunho && registroInicial) ? registroInicial.id : `draft_${Date.now()}`;
+    
+    let registro: any = {
+      id,
+      categoria,
+      data: formData.data || format(new Date(), 'dd/MM/yyyy'),
+      horarioEntrada: formData.horarioEntrada || format(new Date(), 'HH:mm'),
+      horarioSaida: '',
+      isRascunho: true,
+      observacao: formData.observacao?.trim() || ''
+    };
+
+    switch (categoria) {
+      case 'entregas1':
+        registro = { ...registro, nome: formData.nome || '', empresa: formData.empresa || '', rgCpf: formData.rgCpf || '' };
+        break;
+      case 'visitantes':
+      case 'prestadores':
+        registro = { ...registro, nome: formData.nome || '', empresa: formData.empresa || '', nomeEmpresa: `${formData.nome || ''} / ${formData.empresa || ''}`, departamento: formData.departamento || '', rgCpf: formData.rgCpf || '' };
+        break;
+      case 'pesagem':
+        registro = { ...registro, empresa: formData.empresa || '', placa: formData.placa || '', motorista: formData.motorista || '', pesoEntrada: Number(formData.pesoEntrada) || 0, pesoSaida: 0, porteiroEntrada: user?.nome || '' };
+        break;
+      case 'entregas2':
+        registro = { ...registro, motorista: formData.motorista || '', cpfRg: formData.cpfRg || '', empresa: formData.empresa || '', departamento: formData.departamento || '' };
+        break;
+      case 'coleta':
+        registro = { ...registro, rgCpf: formData.rgCpf || '', placa: formData.placa || '', empresa: formData.empresa || '', motorista: formData.motorista || '' };
+        break;
+      case 'movimentacao':
+        registro = { ...registro, nomeColaborador: formData.nomeColaborador || '', rgCpf: formData.rgCpf || '', autorizadoPor: formData.autorizadoPor || '', assinaturaColaborador: formData.assinaturaColaborador || '', porteiro: formData.porteiro || '' };
+        break;
+      case 'correspondencias':
+        registro = { ...registro, destinatario: formData.destinatario || '', remetente: formData.remetente || '', tipo: formData.tipo || '', departamento: formData.departamento || '', quemRetirou: '', porteiro: formData.porteiro || user?.nome || '' };
+        break;
+    }
+
+    if (isRascunho) {
+      updateRascunhoFluxo(registro);
+      toast.success('Rascunho atualizado com sucesso!');
+    } else {
+      addRascunhoFluxo(registro);
+      toast.success('Rascunho salvo com sucesso!');
+    }
+    onClose();
+  };
+
+  const handleDeleteDraft = () => {
+    if (isRascunho && registroInicial) {
+      removeRascunhoFluxo(registroInicial.id);
+      toast.success('Rascunho excluído!');
+      onClose();
+    }
+  };
+
   // When user selects an autocomplete suggestion, map unified data → current category fields
-  // Always overwrite because the user explicitly chose a suggestion
+  // Always preserve data and horarioEntrada (auto-filled from current date/time)
   const handleAutoSelect = (suggestionData: Record<string, string>) => {
     const unified = suggestionData as unknown as UnifiedSuggestionData;
     const activeCatForAuto = categoria || categoriaInicial || 'entregas2';
@@ -462,9 +537,10 @@ export default function RegistroModal({
     setFormData((prev) => ({
       ...prev,
       ...mapped,
-      // Preserve auto date/time
-      data: prev.data || format(new Date(), 'dd/MM/yyyy'),
-      horarioEntrada: prev.horarioEntrada || format(new Date(), 'HH:mm'),
+      // Always preserve auto date/time — never overwrite with historical values
+      data: format(new Date(), 'dd/MM/yyyy'),
+      horarioEntrada: format(new Date(), 'HH:mm'),
+      porteiro: prev.porteiro || user?.nome || '',
     }));
   };
 
@@ -472,6 +548,28 @@ export default function RegistroModal({
     if (!categoria) {
       toast.error('Selecione uma categoria obrigatória');
       return;
+    }
+
+    const checkAndCadastrarEmpresa = (nomeEmpresa?: string) => {
+      if (!nomeEmpresa) return;
+      const nome = nomeEmpresa.trim();
+      if (!nome) return;
+      
+      const existe = empresas.some(
+        (e) => e.nome.toLowerCase() === nome.toLowerCase()
+      );
+      
+      if (!existe) {
+        addEmpresa({
+          id: `emp_${Date.now()}`,
+          nome: nome,
+        });
+        toast.success(`Empresa "${nome}" cadastrada automaticamente!`);
+      }
+    };
+
+    if (formData.empresa) {
+        checkAndCadastrarEmpresa(formData.empresa);
     }
 
     const id = `fl_${Date.now()}`;
@@ -638,8 +736,34 @@ export default function RegistroModal({
       registro.observacao = formData.observacao.trim();
     }
 
+    if (isRascunho && registroInicial) {
+      removeRascunhoFluxo(registroInicial.id);
+    }
+
     addRegistroFluxo(registro);
     toast.success(isRefacao ? 'Nova versão do registro salva com sucesso!' : 'Registro adicionado com sucesso!');
+
+    if (categoria === 'coleta') {
+      let docLabel = 'RG/CPF';
+      let docValue = formData.rgCpf || '-';
+      
+      if (formData.rgCpf) {
+        const digits = formData.rgCpf.replace(/\D/g, '');
+        if (digits.length === 11) {
+          docLabel = 'CPF';
+          docValue = digits.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
+        } else if (digits.length > 0) {
+          docLabel = 'RG';
+          docValue = digits.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
+      }
+      
+      const mensagem = `O senhor ${formData.motorista || ''}, ${docLabel}: ${docValue}, pela empresa ${formData.empresa || ''} veio realizar coleta. Pode liberar?`;
+      
+      setColetaMessage(mensagem);
+      return; // Do not call onClose() yet, wait for user to close the message modal
+    }
+
     onClose();
   };
 
@@ -1128,10 +1252,18 @@ export default function RegistroModal({
   };
 
   return (
-    <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
+    <>
+    <Dialog open={open && !coletaMessage} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto custom-scrollbar">
         <DialogHeader>
-          <DialogTitle>{isRefacao ? 'Nova versão do Registro' : 'Novo Registro'}</DialogTitle>
+          <DialogTitle className="flex items-center gap-2">
+            {isRascunho ? (
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+            ) : isRefacao ? (
+              <AlertTriangle className="h-5 w-5 text-amber-500" />
+            ) : null}
+            {isRascunho ? 'Modificar Rascunho' : isRefacao ? 'Refazer Registro (Corrigir Versão)' : 'Novo Registro'}
+          </DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -1183,15 +1315,79 @@ export default function RegistroModal({
           )}
         </div>
 
+        <DialogFooter className="gap-2 sm:gap-0 flex-wrap justify-between sm:justify-end w-full">
+          {isRascunho ? (
+            <Button variant="destructive" onClick={handleDeleteDraft} className="w-full sm:w-auto mb-2 sm:mb-0 sm:mr-auto">
+              Excluir Rascunho
+            </Button>
+          ) : (
+            <Button variant="secondary" onClick={handleSaveDraft} className="w-full sm:w-auto mb-2 sm:mb-0 sm:mr-auto">
+              Salvar Rascunho
+            </Button>
+          )}
+
+          <div className="flex gap-2 w-full sm:w-auto">
+            <Button variant="outline" onClick={onClose} className="flex-1 sm:flex-none">
+              Cancelar
+            </Button>
+            {isRascunho && (
+              <Button onClick={handleSaveDraft} variant="outline" className="flex-1 sm:flex-none border-emerald-500/30 text-emerald-600 hover:bg-emerald-500/10">
+                Atualizar Rascunho
+              </Button>
+            )}
+            <Button onClick={handleSubmit} className="bg-emerald-600 hover:bg-emerald-700 flex-1 sm:flex-none">
+              Salvar
+            </Button>
+          </div>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <Dialog open={!!coletaMessage} onOpenChange={(v) => {
+      if (!v) {
+        setColetaMessage(null);
+        onClose();
+      }
+    }}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Mensagem de Liberação</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <p className="text-sm text-muted-foreground">
+            Copie a mensagem abaixo para enviar no grupo de liberação:
+          </p>
+          <div className="bg-muted p-3 rounded-lg text-sm text-foreground select-all">
+            {coletaMessage}
+          </div>
+        </div>
         <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={onClose}>
-            Cancelar
+          <Button
+            variant="outline"
+            onClick={() => {
+              setColetaMessage(null);
+              onClose();
+            }}
+          >
+            Fechar
           </Button>
-          <Button onClick={handleSubmit} className="bg-emerald-600 hover:bg-emerald-700">
-            Salvar
+          <Button
+            className="bg-emerald-600 hover:bg-emerald-700 text-white"
+            onClick={() => {
+              if (coletaMessage) {
+                navigator.clipboard.writeText(coletaMessage)
+                  .then(() => toast.success('Mensagem copiada!'))
+                  .catch(() => toast.error('Erro ao copiar. Selecione o texto e copie manualmente.'));
+              }
+              setColetaMessage(null);
+              onClose();
+            }}
+          >
+            Copiar mensagem
           </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
+    </>
   );
 }

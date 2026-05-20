@@ -158,6 +158,21 @@ async function loadSystemConfig() {
   useAppStore.setState({ systemConfig: config });
 }
 
+// Helper functions for rascunhos
+const loadRascunhos = (): RegistroFluxo[] => {
+  if (typeof window !== 'undefined') {
+    const saved = localStorage.getItem('rascunhosFluxo');
+    if (saved) return JSON.parse(saved);
+  }
+  return [];
+};
+
+const saveRascunhos = (rascunhos: RegistroFluxo[]) => {
+  if (typeof window !== 'undefined') {
+    localStorage.setItem('rascunhosFluxo', JSON.stringify(rascunhos));
+  }
+};
+
 // ── Firestore subscription unsubscribe handles ──
 let unsubs: Unsubscribe[] = [];
 
@@ -315,6 +330,10 @@ interface AppState {
   registrarSaida: (id: string, detalhes?: string, ocorrencia?: string, pesoSaida?: number, porteiroSaida?: string) => void;
   buscaFluxo: string;
   setBuscaFluxo: (busca: string) => void;
+  rascunhosFluxo: RegistroFluxo[];
+  addRascunhoFluxo: (registro: RegistroFluxo) => void;
+  updateRascunhoFluxo: (registro: RegistroFluxo) => void;
+  removeRascunhoFluxo: (id: string) => void;
 
   // Cadastros
   empresas: Empresa[];
@@ -420,8 +439,13 @@ interface AppState {
 
 export const useAppStore = create<AppState>((set, get) => ({
   // Navigation
-  currentPage: 'login',
-  setCurrentPage: (page) => set({ currentPage: page }),
+  currentPage: (typeof window !== 'undefined' ? localStorage.getItem('apex_porter_currentPage') as PageType : null) || 'login',
+  setCurrentPage: (page) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('apex_porter_currentPage', page);
+    }
+    set({ currentPage: page });
+  },
 
   // Auth
   isAuthenticated: false,
@@ -455,6 +479,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         cargo: 'Porteiro',
         dataCadastro: firebaseUser.metadata.creationTime || new Date().toISOString(),
       };
+      if (typeof window !== 'undefined') localStorage.setItem('apex_porter_currentPage', 'dashboard');
       set({ isAuthenticated: true, user, authLoading: false, currentPage: 'dashboard' });
       // Start Firestore real-time subscriptions
       startSubscriptions();
@@ -478,6 +503,7 @@ export const useAppStore = create<AppState>((set, get) => ({
         cargo: cargo || 'Porteiro',
         dataCadastro: firebaseUser.metadata.creationTime || new Date().toISOString(),
       };
+      if (typeof window !== 'undefined') localStorage.setItem('apex_porter_currentPage', 'dashboard');
       set({ isAuthenticated: true, user, authLoading: false, currentPage: 'dashboard' });
       // Start Firestore real-time subscriptions
       startSubscriptions();
@@ -512,6 +538,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
     // Stop Firestore subscriptions
     clearSubscriptions();
+    if (typeof window !== 'undefined') localStorage.removeItem('apex_porter_currentPage');
     set({ isAuthenticated: false, user: null, currentPage: 'login' });
   },
 
@@ -538,6 +565,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       dataCadastro: firebaseUser.metadata.creationTime || new Date().toISOString(),
     };
     
+    const targetPage = get().currentPage === 'login' ? 'dashboard' : get().currentPage;
+    
     // Extract and apply saved settings if present
     const savedSettings = firestoreData?.settings;
     if (savedSettings) {
@@ -546,13 +575,14 @@ export const useAppStore = create<AppState>((set, get) => ({
         user, 
         authInitialized: true, 
         authLoading: false,
+        currentPage: targetPage,
         settings: {
           ...get().settings,
           ...savedSettings
         }
       });
     } else {
-      set({ isAuthenticated: true, user, authInitialized: true, authLoading: false });
+      set({ isAuthenticated: true, user, authInitialized: true, authLoading: false, currentPage: targetPage });
     }
     
     // Update ultimoLogin in Firestore (non-blocking)
@@ -634,6 +664,29 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   buscaFluxo: '',
   setBuscaFluxo: (busca) => set({ buscaFluxo: busca }),
+
+  rascunhosFluxo: loadRascunhos(),
+  addRascunhoFluxo: (registro) => {
+    set((state) => {
+      const newRascunhos = [...state.rascunhosFluxo, { ...registro, isRascunho: true }];
+      saveRascunhos(newRascunhos);
+      return { rascunhosFluxo: newRascunhos };
+    });
+  },
+  updateRascunhoFluxo: (registro) => {
+    set((state) => {
+      const newRascunhos = state.rascunhosFluxo.map((r) => r.id === registro.id ? { ...registro, isRascunho: true } : r);
+      saveRascunhos(newRascunhos);
+      return { rascunhosFluxo: newRascunhos };
+    });
+  },
+  removeRascunhoFluxo: (id) => {
+    set((state) => {
+      const newRascunhos = state.rascunhosFluxo.filter((r) => r.id !== id);
+      saveRascunhos(newRascunhos);
+      return { rascunhosFluxo: newRascunhos };
+    });
+  },
 
   // Cadastros (Firestore-backed)
   empresas: [],

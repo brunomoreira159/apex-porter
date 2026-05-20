@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 export interface AutocompleteSuggestion {
   label: string;
   sublabel?: string;
+  origin?: 'cadastro' | 'historico';
   data?: Record<string, string>;
 }
 
@@ -34,7 +35,7 @@ export default function AutocompleteInput({
   const inputRef = useRef<HTMLInputElement>(null);
 
   const filteredSuggestions = suggestions.filter((s) => {
-    if (!value || value.length < 3) return false;
+    if (!value || value.length < 1) return false;
     const search = value.toLowerCase();
     return (
       s.label.toLowerCase().includes(search) ||
@@ -44,11 +45,17 @@ export default function AutocompleteInput({
 
   // Remove duplicates by label
   const uniqueSuggestions = filteredSuggestions.filter(
-    (s, i, arr) => arr.findIndex((x) => x.label === s.label && x.sublabel === s.sublabel) === i
+    (s, i, arr) => arr.findIndex((x) => x.label === s.label) === i
   );
 
-  // Limit to 6 results
-  const displaySuggestions = uniqueSuggestions.slice(0, 6);
+  // Sort: cadastro first, then historico, then others
+  const sortedSuggestions = [...uniqueSuggestions].sort((a, b) => {
+    const order: Record<string, number> = { cadastro: 0, historico: 1 };
+    return (order[a.origin || ''] ?? 2) - (order[b.origin || ''] ?? 2);
+  });
+
+  // Limit to 8 results
+  const displaySuggestions = sortedSuggestions.slice(0, 8);
 
   const handleClickOutside = useCallback((e: MouseEvent) => {
     if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -95,7 +102,7 @@ export default function AutocompleteInput({
   };
 
   const handleFocus = () => {
-    if (value && value.length >= 3 && displaySuggestions.length > 0) {
+    if (value && value.length >= 1 && displaySuggestions.length > 0) {
       setIsOpen(true);
     }
   };
@@ -134,9 +141,9 @@ export default function AutocompleteInput({
         <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg overflow-hidden">
           {displaySuggestions.map((suggestion, index) => (
             <button
-              key={`${suggestion.label}-${suggestion.sublabel}-${index}`}
+              key={`${suggestion.label}-${index}`}
               type="button"
-              className={`w-full text-left px-3 py-2.5 text-sm transition-colors flex flex-col gap-0.5 ${
+              className={`w-full text-left px-3 py-2.5 text-sm transition-colors flex items-start justify-between gap-2 ${
                 index === highlightedIndex
                   ? 'bg-emerald-50 dark:bg-emerald-900/20 text-foreground'
                   : 'hover:bg-muted text-foreground'
@@ -144,10 +151,23 @@ export default function AutocompleteInput({
               onClick={() => handleSelect(suggestion)}
               onMouseEnter={() => setHighlightedIndex(index)}
             >
-              <span className="truncate">{highlightMatch(suggestion.label)}</span>
-              {suggestion.sublabel && (
-                <span className="text-xs text-muted-foreground truncate">
-                  {suggestion.sublabel}
+              <div className="flex flex-col gap-0.5 min-w-0">
+                <span className="truncate">{highlightMatch(suggestion.label)}</span>
+                {suggestion.sublabel && (
+                  <span className="text-xs text-muted-foreground truncate">
+                    {suggestion.sublabel}
+                  </span>
+                )}
+              </div>
+              {suggestion.origin && (
+                <span
+                  className={`shrink-0 text-[10px] font-semibold uppercase tracking-wide px-1.5 py-0.5 rounded-full mt-0.5 ${
+                    suggestion.origin === 'cadastro'
+                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-400'
+                      : 'bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400'
+                  }`}
+                >
+                  {suggestion.origin === 'cadastro' ? 'Cadastro' : 'Histórico'}
                 </span>
               )}
             </button>

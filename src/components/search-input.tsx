@@ -35,9 +35,9 @@ export default function SearchInput({
   const handleSearch = (showToast = false) => {
     const search = value.toLowerCase().trim();
 
-    if (search.length < 3) {
+    if (search.length < 1) {
       if (showToast) {
-        toast.info('Digite ao menos 3 caracteres para pesquisar');
+        toast.info('Digite ao menos 1 caractere para pesquisar');
       }
       setIsOpen(false);
       return;
@@ -71,7 +71,7 @@ export default function SearchInput({
   // Keep filtered suggestions in sync as value or suggestions change
   useEffect(() => {
     const search = value.toLowerCase().trim();
-    if (search.length < 3) {
+    if (search.length < 1) {
       setIsOpen(false);
       return;
     }
@@ -165,6 +165,7 @@ export default function SearchInput({
               const company = suggestion.data?.company || '';
               const subText = [doc, company].filter(Boolean).join(' — ');
               const isRegistered = suggestion.data?.origin === 'cadastro';
+              const isHistorico = suggestion.data?.origin === 'historico';
 
               return (
                 <button
@@ -177,7 +178,12 @@ export default function SearchInput({
                     <span className="font-semibold text-emerald-50 truncate">{name}</span>
                     {isRegistered && (
                       <span className="text-[10px] font-bold tracking-wider uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded shrink-0">
-                        Cadastrado
+                        Cadastro
+                      </span>
+                    )}
+                    {isHistorico && (
+                      <span className="text-[10px] font-bold tracking-wider uppercase bg-blue-500/20 text-blue-300 border border-blue-500/30 px-1.5 py-0.5 rounded shrink-0">
+                        Histórico
                       </span>
                     )}
                   </div>

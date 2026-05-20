@@ -51,6 +51,7 @@ export interface BaseRegistroFluxo {
   dataInativacao?: string;
   motivoRefacao?: string;
   observacao?: string;
+  isRascunho?: boolean;
 }
 
 export interface RegistroEntregas1 extends BaseRegistroFluxo {

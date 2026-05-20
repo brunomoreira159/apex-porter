@@ -789,7 +789,7 @@ export default function FluxoPage() {
                 <button
                   type="button"
                   onClick={() => setMensagemLiberacao(gerarMensagemLiberacao(selectedRegistro))}
-                  className="p-1.5 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-md text-emerald-600 transition-colors mr-4"
+                  className="p-1.5 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-md text-emerald-600 transition-colors mr-10"
                   title="Gerar Mensagem de Liberação"
                 >
                   <MessageSquare className="h-5 w-5" />

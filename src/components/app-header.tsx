@@ -16,16 +16,7 @@ import {
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 // ── Signal Bars ─────────────────────────────────────────────────────────────
-const SIGNAL_COLORS: Record<SignalLevel, string> = {
-  0: '#f87171', // red  – offline
-  1: '#fb923c', // orange – fraco
-  2: '#facc15', // yellow – regular
-  3: '#4ade80', // green – bom
-  4: '#34d399', // emerald – ótimo
-};
-
 function SignalBars({ level }: { level: SignalLevel }) {
-  const color = SIGNAL_COLORS[level];
   const heights = ['30%', '50%', '70%', '100%'];
 
   return (
@@ -39,7 +30,7 @@ function SignalBars({ level }: { level: SignalLevel }) {
               width: '3px',
               height: h,
               borderRadius: '1px',
-              backgroundColor: active ? color : 'rgba(255,255,255,0.25)',
+              backgroundColor: active ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.25)',
               transition: 'background-color 0.4s ease',
             }}
           />
@@ -62,29 +53,26 @@ function SignalIndicator() {
       title={tooltipText}
       style={{
         display: 'flex',
-        flexDirection: 'column',
+        flexDirection: 'row',
         alignItems: 'center',
-        gap: '2px',
+        gap: '5px',
         cursor: 'default',
       }}
     >
       <SignalBars level={level} />
-      <span
-        style={{
-          fontSize: '9px',
-          lineHeight: 1,
-          opacity: 0.8,
-          color: SIGNAL_COLORS[level],
-          fontWeight: 600,
-          letterSpacing: '0.02em',
-          whiteSpace: 'nowrap',
-        }}
-      >
-        {label}
-        {latency !== null && level > 0 && (
-          <span style={{ opacity: 0.7, fontWeight: 400 }}> {latency}ms</span>
-        )}
-      </span>
+      {latency !== null && level > 0 && (
+        <span
+          style={{
+            fontSize: '9px',
+            lineHeight: 1,
+            color: 'rgba(255,255,255,0.85)',
+            fontWeight: 500,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          {latency}ms
+        </span>
+      )}
     </div>
   );
 }
@@ -129,9 +117,8 @@ export default function AppHeader() {
             alt="APEX Porter Logo"
             className="h-9 w-9 md:h-10 md:w-10 object-contain drop-shadow-sm"
           />
-          <div>
-            <h1 className="text-xl font-bold tracking-tight leading-tight">APEX PORTER</h1>
-            <p className="text-[11px] leading-tight opacity-85 hidden sm:block">
+          <div className="hidden sm:block">
+            <p className="text-[11px] leading-tight opacity-85">
               Sistema de Registro
             </p>
           </div>

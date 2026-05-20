@@ -418,19 +418,19 @@ export default function FluxoPage() {
       }
     }
     
-    let acao = 'visita';
+    let acao = 'uma visita';
     switch (r.categoria) {
-      case 'coleta': acao = 'coleta'; break;
-      case 'visitantes': acao = 'visita'; break;
-      case 'prestadores': acao = 'prestação de serviço'; break;
+      case 'coleta': acao = 'retirar a coleta'; break;
+      case 'visitantes': acao = 'uma visita'; break;
+      case 'prestadores': acao = 'uma prestação de serviço'; break;
       case 'entregas1':
-      case 'entregas2': acao = 'entrega'; break;
-      case 'pesagem': acao = 'pesagem'; break;
-      case 'correspondencias': acao = 'entrega de correspondência'; break;
+      case 'entregas2': acao = 'uma entrega'; break;
+      case 'pesagem': acao = 'uma pesagem'; break;
+      case 'correspondencias': acao = 'uma entrega de correspondência'; break;
       default: acao = r.categoria;
     }
     
-    return `O senhor ${nome}, ${docLabel}: ${docValue}, pela empresa ${empresa} veio realizar ${acao}. Pode liberar?`;
+    return `O Sr. ${nome}, ${docLabel} ${docValue}, está aqui pela empresa ${empresa} para ${acao}. Podemos liberar?`;
   };
 
   const handleRefazer = (r: RegistroFluxo) => {

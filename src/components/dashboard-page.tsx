@@ -377,7 +377,7 @@ export default function DashboardPage() {
     const listaNegraAtiva = listaNegraFiltered.filter((l) => l.status === 'ativo').length;
     const achadosNaoDevolvidos = achadosFiltered.filter((a) => a.status !== 'devolvido').length;
     const preAuthPendentes = preAuthFiltered.filter((p) => p.status === 'agendado' || p.status === 'confirmado').length;
-    const pessoasCadastradas = pessoas.length;
+    const pessoasCadastradas = pessoas.filter(p => !p.inativo).length;
     const checklistsPendentes = checklistsFiltered.filter((c) => c.status === 'pendente').length;
     const avisosAtivos = avisosFiltered.filter((a) => a.fixado).length;
 
@@ -624,7 +624,7 @@ export default function DashboardPage() {
       Outro: '#6b7280',
     };
     const counts: Record<string, number> = {};
-    pessoas.forEach((p) => {
+    pessoas.filter(p => !p.inativo).forEach((p) => {
       const t = p.tipo || 'Outro';
       counts[t] = (counts[t] || 0) + 1;
     });

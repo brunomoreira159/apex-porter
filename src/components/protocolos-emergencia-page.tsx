@@ -31,6 +31,7 @@ import {
   type TipoEmergencia,
 } from '@/lib/data';
 import { toast } from 'sonner';
+import { formatPhone } from '@/lib/utils';
 
 // Map icon names to actual Lucide icon components
 const ICON_MAP: Record<string, React.ElementType> = {
@@ -799,7 +800,7 @@ export default function ProtocolosEmergenciaPage() {
                       />
                       <Input
                         value={contato.telefone}
-                        onChange={e => handleContatoChange(idx, 'telefone', e.target.value)}
+                        onChange={e => handleContatoChange(idx, 'telefone', formatPhone(e.target.value))}
                         placeholder="Telefone"
                         className="flex-1 h-8 text-xs"
                       />

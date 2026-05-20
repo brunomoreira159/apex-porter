@@ -212,6 +212,8 @@ export interface Pessoa {
   placa: string;
   telefone: string;
   email: string;
+  dataCadastro?: string; // YYYY-MM-DD
+  inativo?: boolean;     // soft-delete flag
 }
 
 // Deprecated alias — kept for backward compatibility with Fluxo records

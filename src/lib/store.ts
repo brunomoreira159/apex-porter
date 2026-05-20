@@ -741,18 +741,20 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
   pessoas: [],
   addPessoa: (pessoa) => {
-    set((state) => ({ pessoas: [...state.pessoas, pessoa] }));
-    const { id, ...data } = pessoa;
+    const dataCadastro = pessoa.dataCadastro || format(new Date(), 'yyyy-MM-dd');
+    const newPessoa = { ...pessoa, dataCadastro };
+    set((state) => ({ pessoas: [...state.pessoas, newPessoa] }));
+    const { id, ...data } = newPessoa;
     setPessoaFS(id, data).catch((err) => {
       console.warn('[Firestore] Falha ao adicionar pessoa:', err);
     });
   },
   removePessoa: (id) => {
     set((state) => ({
-      pessoas: state.pessoas.filter((p) => p.id !== id),
+      pessoas: state.pessoas.map((p) => (p.id === id ? { ...p, inativo: true } : p)),
     }));
-    removePessoaFS(id).catch((err) => {
-      console.warn('[Firestore] Falha ao remover pessoa:', err);
+    updatePessoaFS(id, { inativo: true }).catch((err) => {
+      console.warn('[Firestore] Falha ao inativar pessoa:', err);
     });
   },
   updatePessoa: (pessoa) => {

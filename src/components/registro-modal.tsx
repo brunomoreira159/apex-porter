@@ -30,6 +30,7 @@ import AutocompleteInput, { type AutocompleteSuggestion } from './autocomplete-i
 import SearchInput from './search-input';
 import { toast } from 'sonner';
 import { AlertTriangle } from 'lucide-react';
+import { formatCpfRg } from '@/lib/utils';
 
 // Unified data structure for autocomplete — stores ALL available info
 // regardless of which category it came from
@@ -188,7 +189,7 @@ export default function RegistroModal({
 
   useEffect(() => {
     if (open) {
-      if (registroInicial && isRefacao) {
+      if (registroInicial && (isRefacao || isRascunho)) {
         setCategoria(registroInicial.categoria);
         const { id: _i, inativo: _in, versaoAnteriorId: _v, dataInativacao: _di, motivoRefacao: _m, ...rest } = registroInicial as any;
         setFormData({ ...rest });
@@ -201,7 +202,7 @@ export default function RegistroModal({
         });
       }
     }
-  }, [open, registroInicial, isRefacao, user]);
+  }, [open, registroInicial, isRefacao, isRascunho, user]);
 
   // ── Unified suggestion builders ──
   // All suggestions store data using UnifiedSuggestionData keys
@@ -211,7 +212,7 @@ export default function RegistroModal({
     const map = new Map<string, { data: UnifiedSuggestionData; sublabel: string }>();
 
     // From pessoas (cadastros) — PRIMARY source with FULL data
-    pessoas.forEach((f) => {
+    pessoas.filter((f) => !f.inativo).forEach((f) => {
       if (!map.has(f.nome)) {
         map.set(f.nome, {
           data: {
@@ -285,7 +286,7 @@ export default function RegistroModal({
     });
 
     // From pessoas (cadastros) — empresa field is PRIMARY source
-    pessoas.forEach((p) => {
+    pessoas.filter((p) => !p.inativo).forEach((p) => {
       if (p.empresa && !map.has(p.empresa)) {
         map.set(p.empresa, {
           data: { name: p.nome, company: p.empresa, doc: p.rgCpf || '', plate: p.placa || '', department: p.departamento || '', origin: 'cadastro' },
@@ -330,7 +331,7 @@ export default function RegistroModal({
     const map = new Map<string, { data: UnifiedSuggestionData; sublabel: string }>();
 
     // From pessoas (cadastros) — RG/CPF field is a PRIMARY source
-    pessoas.forEach((p) => {
+    pessoas.filter((p) => !p.inativo).forEach((p) => {
       if (p.rgCpf) {
         if (!map.has(p.rgCpf)) {
           map.set(p.rgCpf, {
@@ -376,7 +377,7 @@ export default function RegistroModal({
     const map = new Map<string, { data: UnifiedSuggestionData; sublabel: string }>();
 
     // From pessoas (cadastros) — placa field is a PRIMARY source
-    pessoas.forEach((p) => {
+    pessoas.filter((p) => !p.inativo).forEach((p) => {
       if (p.placa) {
         if (!map.has(p.placa)) {
           map.set(p.placa, {
@@ -423,7 +424,7 @@ export default function RegistroModal({
     const names = new Set<string>();
     departamentos.forEach((d) => names.add(d.nome));
     // Also collect department names from pessoas cadastros
-    pessoas.forEach((p) => {
+    pessoas.filter((p) => !p.inativo).forEach((p) => {
       if (p.departamento) names.add(p.departamento);
     });
     // Also collect department names from previous fluxo records
@@ -758,7 +759,7 @@ export default function RegistroModal({
         }
       }
       
-      const mensagem = `O senhor ${formData.motorista || ''}, ${docLabel}: ${docValue}, pela empresa ${formData.empresa || ''} veio realizar coleta. Pode liberar?`;
+      const mensagem = `O Sr. ${formData.motorista || ''}, ${docLabel} ${docValue}, está aqui pela empresa ${formData.empresa || ''} para retirar a coleta. Podemos liberar?`;
       
       setColetaMessage(mensagem);
       return; // Do not call onClose() yet, wait for user to close the message modal
@@ -805,7 +806,7 @@ export default function RegistroModal({
               <Label>RG/CPF</Label>
               <AutocompleteInput
                 value={formData.rgCpf || ''}
-                onChange={(v) => updateField('rgCpf', v)}
+                onChange={(v) => updateField('rgCpf', formatCpfRg(v))}
                 onSelect={(s) => handleAutoSelect(s.data || {})}
                 suggestions={rgCpfSuggestions}
                 placeholder="00.000.000-0"
@@ -860,7 +861,7 @@ export default function RegistroModal({
               <Label>RG/CPF</Label>
               <SearchInput
                 value={formData.rgCpf || ''}
-                onChange={(v) => updateField('rgCpf', v)}
+                onChange={(v) => updateField('rgCpf', formatCpfRg(v))}
                 onSelect={handleAutoSelect}
                 suggestions={rgCpfSuggestions}
                 placeholder="00.000.000-0"
@@ -923,7 +924,7 @@ export default function RegistroModal({
               <Label>RG/CPF</Label>
               <SearchInput
                 value={formData.rgCpf || ''}
-                onChange={(v) => updateField('rgCpf', v)}
+                onChange={(v) => updateField('rgCpf', formatCpfRg(v))}
                 onSelect={handleAutoSelect}
                 suggestions={rgCpfSuggestions}
                 placeholder="00.000.000-0"
@@ -1016,7 +1017,7 @@ export default function RegistroModal({
               <Label>CPF/RG</Label>
               <SearchInput
                 value={formData.cpfRg || ''}
-                onChange={(v) => updateField('cpfRg', v)}
+                onChange={(v) => updateField('cpfRg', formatCpfRg(v))}
                 onSelect={handleAutoSelect}
                 suggestions={rgCpfSuggestions}
                 placeholder="00.000.000-0"
@@ -1061,7 +1062,7 @@ export default function RegistroModal({
               <Label>RG/CPF</Label>
               <SearchInput
                 value={formData.rgCpf || ''}
-                onChange={(v) => updateField('rgCpf', v)}
+                onChange={(v) => updateField('rgCpf', formatCpfRg(v))}
                 onSelect={handleAutoSelect}
                 suggestions={rgCpfSuggestions}
                 placeholder="00.000.000-0"
@@ -1124,7 +1125,7 @@ export default function RegistroModal({
               <Label>RG/CPF</Label>
               <SearchInput
                 value={formData.rgCpf || ''}
-                onChange={(v) => updateField('rgCpf', v)}
+                onChange={(v) => updateField('rgCpf', formatCpfRg(v))}
                 onSelect={handleAutoSelect}
                 suggestions={rgCpfSuggestions}
                 placeholder="00.000.000-0"

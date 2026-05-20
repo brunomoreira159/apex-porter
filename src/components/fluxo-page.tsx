@@ -397,11 +397,11 @@ export default function FluxoPage() {
   };
 
   const gerarMensagemLiberacao = (r: RegistroFluxo) => {
-    let nome = r.nome || (r as any).motorista || '';
+    let nome = (r as any).nome || (r as any).motorista || '';
     if (r.categoria === 'visitantes' || r.categoria === 'prestadores') {
-       nome = (r as any).nome || r.nomeEmpresa?.split(' / ')[0] || r.nomeEmpresa || '';
+       nome = (r as any).nome || (r as any).nomeEmpresa?.split(' / ')[0] || (r as any).nomeEmpresa || '';
     }
-    const empresa = (r as any).empresa || r.empresa || r.nomeEmpresa?.split(' / ')[1] || '';
+    const empresa = (r as any).empresa || (r as any).nomeEmpresa?.split(' / ')[1] || '';
     
     // extrair doc
     let doc = (r as any).rgCpf || (r as any).cpfRg || '';
@@ -789,7 +789,7 @@ export default function FluxoPage() {
                 <button
                   type="button"
                   onClick={() => setMensagemLiberacao(gerarMensagemLiberacao(selectedRegistro))}
-                  className="p-1.5 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-md text-emerald-600 transition-colors mr-10"
+                  className="p-1.5 hover:bg-emerald-100 dark:hover:bg-emerald-900/40 rounded-md text-emerald-600 transition-colors mr-14"
                   title="Gerar Mensagem de Liberação"
                 >
                   <MessageSquare className="h-5 w-5" />

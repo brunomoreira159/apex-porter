@@ -16,7 +16,13 @@ import {
   X,
   Check,
   Filter,
+  Clock,
+  Calendar,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
+import { format, formatDistanceToNow } from 'date-fns';
+import { ptBR } from 'date-fns/locale';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -41,6 +47,7 @@ import { TIPOS_PESSOA, type TipoPessoa, type Pessoa } from '@/lib/data';
 import { toast } from 'sonner';
 import AutocompleteInput from './autocomplete-input';
 import { PESSOAS_INICIAIS, REGISTROS_FLUXO_INICIAIS } from '@/lib/seed-data';
+import { formatCpfRg, formatPhone } from '@/lib/utils';
 
 const TIPO_ICONS: Record<TipoPessoa, React.ReactNode> = {
   Colaborador: <Briefcase className="h-3.5 w-3.5" />,
@@ -92,7 +99,14 @@ export default function CadastrosPage() {
   const [form, setForm] = useState<FormState>({ ...EMPTY_FORM });
   const [search, setSearch] = useState('');
   const [filterTipo, setFilterTipo] = useState<TipoPessoa | 'todos'>('todos');
+  const [filterStatus, setFilterStatus] = useState<'ativos' | 'inativos' | 'todos'>('ativos');
+  const [filterDepartamento, setFilterDepartamento] = useState<string>('todos');
+  const [filterEmpresa, setFilterEmpresa] = useState<string>('todos');
   const [showFilters, setShowFilters] = useState(false);
+
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [detailsPessoa, setDetailsPessoa] = useState<Pessoa | null>(null);
+  const [showMoreVisits, setShowMoreVisits] = useState(false);
 
   // ── Unified suggestions ──
   const { nameSuggestions, empresaSuggestions, rgCpfSuggestions } = useMemo(() => {
@@ -298,9 +312,20 @@ export default function CadastrosPage() {
   // Filtered list
   const filteredPessoas = useMemo(() => {
     let list = pessoas;
+    
+    if (filterStatus === 'ativos') list = list.filter((p) => !p.inativo);
+    if (filterStatus === 'inativos') list = list.filter((p) => p.inativo);
+    
     if (filterTipo !== 'todos') {
       list = list.filter((p) => p.tipo === filterTipo);
     }
+    if (filterDepartamento !== 'todos') {
+      list = list.filter((p) => p.departamento === filterDepartamento);
+    }
+    if (filterEmpresa !== 'todos') {
+      list = list.filter((p) => p.empresa === filterEmpresa);
+    }
+
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(
@@ -314,7 +339,7 @@ export default function CadastrosPage() {
       );
     }
     return list;
-  }, [pessoas, search, filterTipo]);
+  }, [pessoas, search, filterTipo, filterStatus, filterDepartamento, filterEmpresa]);
 
   const openNewDialog = () => {
     setEditingId(null);
@@ -397,12 +422,32 @@ export default function CadastrosPage() {
 
   // Summary counts
   const countByTipo = useMemo(() => {
-    const counts: Record<string, number> = { total: pessoas.length };
-    pessoas.forEach((p) => {
+    const list = pessoas.filter(p => !p.inativo);
+    const counts: Record<string, number> = { total: list.length };
+    list.forEach((p) => {
       counts[p.tipo] = (counts[p.tipo] || 0) + 1;
     });
     return counts;
   }, [pessoas]);
+
+  const personVisits = useMemo(() => {
+    if (!detailsPessoa) return [];
+    return registrosFluxo
+      .filter((r) => {
+        if ('nome' in r && r.nome === detailsPessoa.nome) return true;
+        if ('motoristaNome' in r && r.motoristaNome === detailsPessoa.nome) return true;
+        if ('visitanteNome' in r && r.visitanteNome === detailsPessoa.nome) return true;
+        return false;
+      })
+      .sort((a, b) => {
+        const da = 'data' in a ? (a as any).data : ('dataPrevista' in a ? (a as any).dataPrevista : '');
+        const ha = a.horarioEntrada || '';
+        const db = 'data' in b ? (b as any).data : ('dataPrevista' in b ? (b as any).dataPrevista : '');
+        const hb = b.horarioEntrada || '';
+        if (da !== db) return da > db ? -1 : 1;
+        return ha > hb ? -1 : 1;
+      });
+  }, [detailsPessoa, registrosFluxo]);
 
   return (
     <motion.div
@@ -459,25 +504,91 @@ export default function CadastrosPage() {
         ))}
       </div>
 
-      {/* Search */}
-      <div className="flex gap-2">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Buscar por nome, empresa, RG/CPF, placa..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-9"
-          />
-          {search && (
-            <button
-              onClick={() => setSearch('')}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
+      {/* Search and Filters */}
+      <div className="flex flex-col gap-2">
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Buscar por nome, empresa, RG/CPF, placa..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+            />
+            {search && (
+              <button
+                onClick={() => setSearch('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
+          </div>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={() => setShowFilters(!showFilters)}
+            className={showFilters ? 'bg-muted' : ''}
+          >
+            <Filter className="h-4 w-4" />
+          </Button>
         </div>
+
+        {/* Advanced Filters */}
+        <AnimatePresence>
+          {showFilters && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="overflow-hidden"
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 bg-muted/30 border rounded-lg mt-1">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Status</Label>
+                  <Select value={filterStatus} onValueChange={(v: any) => setFilterStatus(v)}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      <SelectItem value="ativos">Ativos</SelectItem>
+                      <SelectItem value="inativos">Inativos</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Departamento</Label>
+                  <Select value={filterDepartamento} onValueChange={setFilterDepartamento}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todos</SelectItem>
+                      {departamentos.map(d => (
+                        <SelectItem key={d.id} value={d.nome}>{d.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Empresa</Label>
+                  <Select value={filterEmpresa} onValueChange={setFilterEmpresa}>
+                    <SelectTrigger className="h-8 text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="todos">Todas</SelectItem>
+                      {empresas.map(e => (
+                        <SelectItem key={e.id} value={e.nome}>{e.nome}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* People list */}
@@ -517,29 +628,34 @@ export default function CadastrosPage() {
               exit={{ opacity: 0, x: -100 }}
               transition={{ duration: 0.2 }}
             >
-              <Card className="overflow-hidden">
+              <Card 
+                className={`overflow-hidden cursor-pointer hover:bg-muted/50 transition-colors ${p.inativo ? 'opacity-60 grayscale-[0.5]' : ''}`}
+                onClick={() => { setDetailsPessoa(p); setShowMoreVisits(false); setDetailsOpen(true); }}
+              >
                 <CardContent className="p-0">
                   <div className="flex items-stretch">
                     {/* Type indicator stripe */}
                     <div className={`w-1.5 shrink-0 ${TIPO_STRIPE_COLORS[p.tipo] || 'bg-gray-400'}`} />
                     <div className="flex-1 p-3 flex items-center justify-between gap-3 min-w-0">
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 mb-1 flex-wrap">
-                          <p className="font-medium truncate">{p.nome}</p>
-                          <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold ${TIPO_COLORS[p.tipo]}`}>
-                            {TIPO_ICONS[p.tipo]}
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          <p className="font-medium truncate text-base">{p.nome}</p>
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-muted text-muted-foreground border">
                             {p.tipo}
                           </span>
+                          {p.inativo && (
+                            <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-medium bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-400 border">
+                              Inativo
+                            </span>
+                          )}
                         </div>
-                        <div className="text-xs text-muted-foreground space-y-0.5">
-                          {/* Main info line */}
-                          <p className="truncate">
-                            {[p.empresa, p.departamento, p.cargo].filter(Boolean).join(' • ')}
-                          </p>
-                          {/* Secondary info line */}
-                          <p className="truncate">
-                            {[p.rgCpf && `Doc: ${p.rgCpf}`, p.placa && `Placa: ${p.placa}`, p.telefone && `Tel: ${p.telefone}`].filter(Boolean).join(' • ')}
-                          </p>
+                        <div className="text-xs text-muted-foreground flex flex-col gap-1">
+                          {p.empresa && <p className="truncate"><span className="font-semibold text-foreground">Empresa:</span> {p.empresa}</p>}
+                          {p.departamento && <p className="truncate"><span className="font-semibold text-foreground">Departamento:</span> {p.departamento}</p>}
+                          {p.cargo && <p className="truncate"><span className="font-semibold text-foreground">Cargo:</span> {p.cargo}</p>}
+                          {p.rgCpf && <p className="truncate"><span className="font-semibold text-foreground">Documento:</span> {p.rgCpf}</p>}
+                          {p.placa && <p className="truncate"><span className="font-semibold text-foreground">Placa:</span> {p.placa}</p>}
+                          {p.telefone && <p className="truncate"><span className="font-semibold text-foreground">Telefone:</span> {p.telefone}</p>}
                         </div>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
@@ -547,7 +663,7 @@ export default function CadastrosPage() {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-muted-foreground hover:text-emerald-600 hover:bg-emerald/10"
-                          onClick={() => openEditDialog(p)}
+                          onClick={(e) => { e.stopPropagation(); openEditDialog(p); }}
                         >
                           <Edit2 className="h-4 w-4" />
                         </Button>
@@ -555,9 +671,10 @@ export default function CadastrosPage() {
                           variant="ghost"
                           size="icon"
                           className="h-8 w-8 text-destructive hover:bg-destructive/10"
-                          onClick={() => {
+                          onClick={(e) => {
+                            e.stopPropagation();
                             removePessoa(p.id);
-                            toast.success('Pessoa removida');
+                            toast.success(p.inativo ? 'Pessoa removida' : 'Pessoa inativada');
                           }}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -571,6 +688,139 @@ export default function CadastrosPage() {
           ))}
         </AnimatePresence>
       </div>
+
+      {/* Details Dialog */}
+      <Dialog open={detailsOpen} onOpenChange={setDetailsOpen}>
+        <DialogContent className="max-w-md max-h-[85vh] overflow-y-auto custom-scrollbar">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Users className="h-5 w-5 text-emerald-600" />
+              Detalhes da Pessoa
+            </DialogTitle>
+          </DialogHeader>
+
+          {detailsPessoa && (
+            <div className="space-y-5">
+              <div className="bg-muted/50 rounded-xl p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <div className={`p-2.5 rounded-lg ${TIPO_COLORS[detailsPessoa.tipo]}`}>
+                    {TIPO_ICONS[detailsPessoa.tipo]}
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg leading-tight">{detailsPessoa.nome}</h3>
+                    <p className="text-sm text-muted-foreground">{detailsPessoa.cargo || detailsPessoa.tipo}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3 pt-2">
+                  <div>
+                    <p className="text-xs text-muted-foreground">Empresa</p>
+                    <p className="text-sm font-medium">{detailsPessoa.empresa || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Departamento</p>
+                    <p className="text-sm font-medium">{detailsPessoa.departamento || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">RG/CPF</p>
+                    <p className="text-sm font-medium">{detailsPessoa.rgCpf || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Telefone</p>
+                    <p className="text-sm font-medium">{detailsPessoa.telefone || '-'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Data Cadastro</p>
+                    <p className="text-sm font-medium">
+                      {detailsPessoa.dataCadastro ? (
+                        <>
+                          {format(new Date(detailsPessoa.dataCadastro), 'dd/MM/yyyy')}
+                          <span className="block text-[10px] text-muted-foreground mt-0.5">
+                            ({formatDistanceToNow(new Date(detailsPessoa.dataCadastro), { locale: ptBR, addSuffix: true })})
+                          </span>
+                        </>
+                      ) : '-'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-muted-foreground">Status</p>
+                    <Badge variant="outline" className={detailsPessoa.inativo ? "border-red-200 text-red-600" : "border-emerald-200 text-emerald-600"}>
+                      {detailsPessoa.inativo ? "Inativo" : "Ativo"}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              {/* Visitas */}
+              <div>
+                <h4 className="font-semibold text-sm mb-3 flex items-center gap-2">
+                  <Clock className="h-4 w-4 text-muted-foreground" />
+                  Histórico de Visitas ({personVisits.length})
+                </h4>
+                
+                {personVisits.length === 0 ? (
+                  <p className="text-sm text-muted-foreground text-center py-4 bg-muted/20 rounded-lg border border-dashed">
+                    Nenhum registro encontrado.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {personVisits.slice(0, showMoreVisits ? 25 : 5).map((v) => (
+                      <div key={v.id} className="flex justify-between items-start p-3 bg-muted/30 rounded-lg border text-sm">
+                        <div>
+                          <p className="font-medium">
+                            {'data' in v ? (v as any).data : ('dataPrevista' in v ? (v as any).dataPrevista : '')}
+                            <span className="text-muted-foreground ml-2 font-normal">{v.horarioEntrada}</span>
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-0.5">
+                            {v.categoria} • {(v as any).departamento || '-'}
+                          </p>
+                        </div>
+                        {v.horarioSaida && (
+                          <span className="text-xs bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 px-2 py-0.5 rounded-full shrink-0">
+                            Saída: {v.horarioSaida}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+                
+                {personVisits.length > 5 && (
+                  <Button
+                    variant="ghost"
+                    className="w-full mt-2 text-xs"
+                    onClick={() => setShowMoreVisits(!showMoreVisits)}
+                  >
+                    {showMoreVisits ? (
+                      <>Ver menos <ChevronUp className="h-3 w-3 ml-1" /></>
+                    ) : (
+                      <>Ver mais {Math.min(personVisits.length - 5, 20)} visitas <ChevronDown className="h-3 w-3 ml-1" /></>
+                    )}
+                  </Button>
+                )}
+              </div>
+            </div>
+          )}
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDetailsOpen(false)} className="w-full sm:w-auto">
+              Fechar
+            </Button>
+            {detailsPessoa && (
+               <Button 
+                 onClick={() => {
+                   setDetailsOpen(false);
+                   openEditDialog(detailsPessoa);
+                 }}
+                 className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto"
+               >
+                 <Edit2 className="h-4 w-4 mr-2" />
+                 Editar
+               </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -679,7 +929,7 @@ export default function CadastrosPage() {
               <Label className="text-xs font-medium">RG / CPF *</Label>
               <AutocompleteInput
                 value={form.rgCpf}
-                onChange={(v) => updateForm('rgCpf', v)}
+                onChange={(v) => updateForm('rgCpf', formatCpfRg(v))}
                 onSelect={(s) => handleAutoSelect(s.data)}
                 suggestions={rgCpfSuggestions}
                 placeholder="00.000.000-0"
@@ -702,7 +952,7 @@ export default function CadastrosPage() {
               <Input
                 placeholder="(00) 00000-0000"
                 value={form.telefone}
-                onChange={(e) => updateForm('telefone', e.target.value)}
+                onChange={(e) => updateForm('telefone', formatPhone(e.target.value))}
               />
             </div>
 

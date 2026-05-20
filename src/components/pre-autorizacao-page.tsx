@@ -88,7 +88,7 @@ export default function PreAutorizacaoPage() {
   // Sugestões
   const nameSuggestions = useMemo(() => {
     const set = new Map<string, Record<string, string>>();
-    pessoas.forEach(f => set.set(f.nome, { name: f.nome }));
+    pessoas.filter(f => !f.inativo).forEach(f => set.set(f.nome, { name: f.nome }));
     preAutorizacoes.forEach(pa => { if (pa.visitanteNome) set.set(pa.visitanteNome, { name: pa.visitanteNome }); });
     return Array.from(set.entries()).map(([label, data]) => ({ label, data, sublabel: undefined }));
   }, [pessoas, preAutorizacoes]);
@@ -102,9 +102,9 @@ export default function PreAutorizacaoPage() {
 
   const autorizadores = useMemo(() => {
     const set = new Map<string, Record<string, string>>();
-    pessoas.filter(f => ['Supervisor', 'Gerente', 'Diretor', 'Coordenador'].some(c => f.cargo.includes(c)))
+    pessoas.filter(f => !f.inativo && ['Supervisor', 'Gerente', 'Diretor', 'Coordenador'].some(c => f.cargo.includes(c)))
       .forEach(f => set.set(f.nome, { name: f.nome }));
-    if (!set.size) pessoas.forEach(f => set.set(f.nome, { name: f.nome }));
+    if (!set.size) pessoas.filter(f => !f.inativo).forEach(f => set.set(f.nome, { name: f.nome }));
     return Array.from(set.entries()).map(([label, data]) => ({ label, data, sublabel: undefined }));
   }, [pessoas]);
 

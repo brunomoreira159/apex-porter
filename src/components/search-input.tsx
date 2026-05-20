@@ -136,7 +136,7 @@ export default function SearchInput({
             }
           }}
           placeholder={placeholder}
-          className={`pr-10 bg-emerald-950/10 border-emerald-800/20 text-emerald-50 placeholder:text-emerald-700/50 focus:border-emerald-500/50 focus:ring-emerald-500/20 ${className || ''}`}
+          className={`pr-10 bg-emerald-950/10 border-emerald-800/20 text-foreground dark:text-emerald-50 placeholder:text-emerald-700/50 dark:placeholder:text-emerald-400/40 focus:border-emerald-500/50 focus:ring-emerald-500/20 ${className || ''}`}
           autoComplete="off"
         />
         <button
@@ -145,7 +145,7 @@ export default function SearchInput({
             e.stopPropagation();
             handleSearch(true);
           }}
-          className="absolute right-1 p-2 rounded-md hover:bg-emerald-950/40 text-emerald-400/70 hover:text-emerald-300 transition-colors cursor-pointer"
+          className="absolute right-1 p-2 rounded-md hover:bg-emerald-950/10 dark:hover:bg-emerald-950/40 text-emerald-700/70 dark:text-emerald-400/70 hover:text-emerald-800 dark:hover:text-emerald-300 transition-colors cursor-pointer"
           title="Pesquisar"
         >
           <Search className="h-4 w-4" />
@@ -153,9 +153,9 @@ export default function SearchInput({
       </div>
 
       {isOpen && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-emerald-950/95 border border-emerald-800/40 backdrop-blur-md rounded-lg shadow-xl overflow-hidden max-h-60 overflow-y-auto custom-scrollbar">
+        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover dark:bg-emerald-950/95 border border-border dark:border-emerald-800/40 backdrop-blur-md rounded-lg shadow-xl overflow-hidden max-h-60 overflow-y-auto custom-scrollbar">
           {filteredList.length === 0 ? (
-            <div className="px-3 py-4 text-sm text-center text-emerald-300/60">
+            <div className="px-3 py-4 text-sm text-center text-muted-foreground dark:text-emerald-300/60">
               Nenhum registro encontrado
             </div>
           ) : (
@@ -171,24 +171,24 @@ export default function SearchInput({
                 <button
                   key={`${name}-${doc}-${index}`}
                   type="button"
-                  className="w-full text-left px-3 py-2.5 text-sm transition-colors flex flex-col gap-0.5 hover:bg-emerald-800/30 text-emerald-100 border-b border-emerald-900/40 last:border-b-0 cursor-pointer"
+                  className="w-full text-left px-3 py-2.5 text-sm transition-colors flex flex-col gap-0.5 hover:bg-muted dark:hover:bg-emerald-800/30 text-foreground dark:text-emerald-100 border-b border-border dark:border-emerald-900/40 last:border-b-0 cursor-pointer"
                   onClick={() => handleSelect(suggestion)}
                 >
                   <div className="flex items-center justify-between gap-2">
-                    <span className="font-semibold text-emerald-50 truncate">{name}</span>
+                    <span className="font-semibold text-foreground dark:text-emerald-50 truncate">{name}</span>
                     {isRegistered && (
-                      <span className="text-[10px] font-bold tracking-wider uppercase bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.5 rounded shrink-0">
+                      <span className="text-[10px] font-bold tracking-wider uppercase bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-500/30 px-1.5 py-0.5 rounded shrink-0">
                         Cadastro
                       </span>
                     )}
                     {isHistorico && (
-                      <span className="text-[10px] font-bold tracking-wider uppercase bg-blue-500/20 text-blue-300 border border-blue-500/30 px-1.5 py-0.5 rounded shrink-0">
+                      <span className="text-[10px] font-bold tracking-wider uppercase bg-blue-100 dark:bg-blue-500/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-500/30 px-1.5 py-0.5 rounded shrink-0">
                         Histórico
                       </span>
                     )}
                   </div>
                   {subText && (
-                    <span className="text-xs text-emerald-400/60 truncate">
+                    <span className="text-xs text-muted-foreground dark:text-emerald-400/60 truncate">
                       {subText}
                     </span>
                   )}

@@ -120,7 +120,7 @@ export default function CorrespondenciasPage() {
   // Autocomplete suggestions
   const nameSuggestions = useMemo(() => {
     const map = new Map<string, { sublabel: string }>();
-    pessoas.forEach((f) => {
+    pessoas.filter((f) => !f.inativo).forEach((f) => {
       if (!map.has(f.nome)) {
         map.set(f.nome, { sublabel: `${f.cargo} — ${f.departamento}` });
       }

@@ -43,7 +43,7 @@ export default function ListaNegraPage() {
     });
 
     // 2. From active database
-    (pessoas || []).forEach((p) => {
+    (pessoas || []).filter((p) => !p.inativo).forEach((p) => {
       const u = { name: p.nome, company: p.empresa || '' };
       if (u.name) namesMap.set(u.name, { label: u.name, sublabel: p.tipo, data: u });
       if (u.company) empresasMap.set(u.company, { label: u.company, sublabel: 'Empresa cadastrada', data: u });

@@ -92,7 +92,7 @@ export default function VeiculosPage() {
   // Sugestões
   const nameSuggestions = useMemo(() => {
     const set = new Map<string, Record<string, string>>();
-    pessoas.forEach(f => set.set(f.nome, { name: f.nome }));
+    pessoas.filter(f => !f.inativo).forEach(f => set.set(f.nome, { name: f.nome }));
     veiculos.forEach(v => { if (v.motoristaNome) set.set(v.motoristaNome, { name: v.motoristaNome }); });
     return Array.from(set.entries()).map(([label, data]) => ({ label, data, sublabel: undefined }));
   }, [pessoas, veiculos]);

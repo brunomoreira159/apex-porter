@@ -46,20 +46,20 @@ export const DEPARTAMENTOS_INICIAIS: Departamento[] = [
 ];
 
 export const PESSOAS_INICIAIS: Pessoa[] = [
-  { id: 'func1', nome: 'Carlos Eduardo Silva', tipo: 'Colaborador', empresa: '', departamento: 'Segurança', cargo: 'Porteiro', rgCpf: '12.345.678-9', placa: '', telefone: '(11) 99876-5432', email: 'carlos.silva@apex.com' },
-  { id: 'func2', nome: 'Ana Maria Costa', tipo: 'Colaborador', empresa: '', departamento: 'Recepção', cargo: 'Recepcionista', rgCpf: '23.456.789-0', placa: '', telefone: '(11) 98765-4321', email: 'ana.costa@apex.com' },
-  { id: 'func3', nome: 'João Pedro Oliveira', tipo: 'Colaborador', empresa: '', departamento: 'Segurança', cargo: 'Supervisor', rgCpf: '34.567.890-1', placa: '', telefone: '(11) 97654-3210', email: 'joao.oliveira@apex.com' },
-  { id: 'func4', nome: 'Maria Fernanda Santos', tipo: 'Colaborador', empresa: '', departamento: 'RH', cargo: 'Analista RH', rgCpf: '45.678.901-2', placa: '', telefone: '(11) 96543-2109', email: 'maria.santos@apex.com' },
-  { id: 'func5', nome: 'Roberto Junior Lima', tipo: 'Colaborador', empresa: '', departamento: 'TI', cargo: 'Técnico TI', rgCpf: '56.789.012-3', placa: '', telefone: '(11) 95432-1098', email: 'roberto.lima@apex.com' },
-  { id: 'func6', nome: 'Fernando Souza', tipo: 'Colaborador', empresa: '', departamento: 'Diretoria', cargo: 'Diretor', rgCpf: '456.789.012-33', placa: 'XYZ-5L67', telefone: '(11) 94321-0987', email: 'fernando.souza@apex.com' },
-  { id: 'pes1', nome: 'José da Silva', tipo: 'Motorista', empresa: 'Transportes Silva Ltda', departamento: '', cargo: 'Motorista', rgCpf: '12.345.678-9', placa: 'ABC-1D23', telefone: '(11) 91234-5678', email: '' },
-  { id: 'pes2', nome: 'Pedro Henrique Santos', tipo: 'Entregador', empresa: 'Distribuidora Central', departamento: '', cargo: 'Entregador', rgCpf: '23.456.789-0', placa: '', telefone: '(11) 92345-6789', email: '' },
-  { id: 'pes3', nome: 'Dr. Paulo Renato', tipo: 'Visitante', empresa: 'Advocacia Renato & Filhos', departamento: 'Diretoria', cargo: 'Advogado', rgCpf: '987.654.321-00', placa: 'MNO-3H45', telefone: '(11) 93456-7890', email: 'paulo@renatoadv.com' },
-  { id: 'pes4', nome: 'Eletricista João Batista', tipo: 'Prestador', empresa: 'JB Elétrica', departamento: 'TI', cargo: 'Eletricista', rgCpf: '321.098.765-66', placa: '', telefone: '(11) 94567-8901', email: '' },
-  { id: 'pes5', nome: 'Walter Nascimento', tipo: 'Motorista', empresa: 'Coleta Verde Ambiental', departamento: '', cargo: 'Motorista', rgCpf: '66.777.888-9', placa: 'PQR-6I78', telefone: '(11) 95678-9012', email: '' },
-  { id: 'pes6', nome: 'Pedro Marcelino', tipo: 'Prestador', empresa: 'Manutenção Total EIRELI', departamento: 'Almoxarifado', cargo: 'Técnico de Manutenção', rgCpf: '210.987.654-77', placa: '', telefone: '(11) 96789-0123', email: '' },
-  { id: 'pes7', nome: 'Luciana Moraes', tipo: 'Visitante', empresa: 'Consultora Empresarial', departamento: 'RH', cargo: 'Consultora', rgCpf: '876.543.210-11', placa: '', telefone: '(11) 97890-1234', email: 'luciana@moraes.com' },
-  { id: 'pes8', nome: 'Augusto Pinto', tipo: 'Motorista', empresa: 'Coleta Verde Ambiental', departamento: '', cargo: 'Motorista', rgCpf: '77.888.999-0', placa: 'STU-9J01', telefone: '(11) 98901-2345', email: '' },
+  { id: 'func1', nome: 'Carlos Eduardo Silva', tipo: 'Colaborador', empresa: '', departamento: 'Segurança', cargo: 'Porteiro', rgCpf: '12.345.678-9', placa: '', telefone: '(11) 99876-5432', email: 'carlos.silva@apex.com', dataCadastro: '2025-01-10' },
+  { id: 'func2', nome: 'Ana Maria Costa', tipo: 'Colaborador', empresa: '', departamento: 'Recepção', cargo: 'Recepcionista', rgCpf: '23.456.789-0', placa: '', telefone: '(11) 98765-4321', email: 'ana.costa@apex.com', dataCadastro: '2025-01-10' },
+  { id: 'func3', nome: 'João Pedro Oliveira', tipo: 'Colaborador', empresa: '', departamento: 'Segurança', cargo: 'Supervisor', rgCpf: '34.567.890-1', placa: '', telefone: '(11) 97654-3210', email: 'joao.oliveira@apex.com', dataCadastro: '2025-01-10' },
+  { id: 'func4', nome: 'Maria Fernanda Santos', tipo: 'Colaborador', empresa: '', departamento: 'RH', cargo: 'Analista RH', rgCpf: '45.678.901-2', placa: '', telefone: '(11) 96543-2109', email: 'maria.santos@apex.com', dataCadastro: '2025-01-10' },
+  { id: 'func5', nome: 'Roberto Junior Lima', tipo: 'Colaborador', empresa: '', departamento: 'TI', cargo: 'Técnico TI', rgCpf: '56.789.012-3', placa: '', telefone: '(11) 95432-1098', email: 'roberto.lima@apex.com', dataCadastro: '2025-01-10' },
+  { id: 'func6', nome: 'Fernando Souza', tipo: 'Colaborador', empresa: '', departamento: 'Diretoria', cargo: 'Diretor', rgCpf: '456.789.012-33', placa: 'XYZ-5L67', telefone: '(11) 94321-0987', email: 'fernando.souza@apex.com', dataCadastro: '2025-01-10' },
+  { id: 'pes1', nome: 'José da Silva', tipo: 'Motorista', empresa: 'Transportes Silva Ltda', departamento: '', cargo: 'Motorista', rgCpf: '12.345.678-9', placa: 'ABC-1D23', telefone: '(11) 91234-5678', email: '', dataCadastro: '2025-01-10' },
+  { id: 'pes2', nome: 'Pedro Henrique Santos', tipo: 'Entregador', empresa: 'Distribuidora Central', departamento: '', cargo: 'Entregador', rgCpf: '23.456.789-0', placa: '', telefone: '(11) 92345-6789', email: '', dataCadastro: '2025-01-10' },
+  { id: 'pes3', nome: 'Dr. Paulo Renato', tipo: 'Visitante', empresa: 'Advocacia Renato & Filhos', departamento: 'Diretoria', cargo: 'Advogado', rgCpf: '987.654.321-00', placa: 'MNO-3H45', telefone: '(11) 93456-7890', email: 'paulo@renatoadv.com', dataCadastro: '2025-01-10' },
+  { id: 'pes4', nome: 'Eletricista João Batista', tipo: 'Prestador', empresa: 'JB Elétrica', departamento: 'TI', cargo: 'Eletricista', rgCpf: '321.098.765-66', placa: '', telefone: '(11) 94567-8901', email: '', dataCadastro: '2025-01-10' },
+  { id: 'pes5', nome: 'Walter Nascimento', tipo: 'Motorista', empresa: 'Coleta Verde Ambiental', departamento: '', cargo: 'Motorista', rgCpf: '66.777.888-9', placa: 'PQR-6I78', telefone: '(11) 95678-9012', email: '', dataCadastro: '2025-01-10' },
+  { id: 'pes6', nome: 'Pedro Marcelino', tipo: 'Prestador', empresa: 'Manutenção Total EIRELI', departamento: 'Almoxarifado', cargo: 'Técnico de Manutenção', rgCpf: '210.987.654-77', placa: '', telefone: '(11) 96789-0123', email: '', dataCadastro: '2025-01-10' },
+  { id: 'pes7', nome: 'Luciana Moraes', tipo: 'Visitante', empresa: 'Consultora Empresarial', departamento: 'RH', cargo: 'Consultora', rgCpf: '876.543.210-11', placa: '', telefone: '(11) 97890-1234', email: 'luciana@moraes.com', dataCadastro: '2025-01-10' },
+  { id: 'pes8', nome: 'Augusto Pinto', tipo: 'Motorista', empresa: 'Coleta Verde Ambiental', departamento: '', cargo: 'Motorista', rgCpf: '77.888.999-0', placa: 'STU-9J01', telefone: '(11) 98901-2345', email: '', dataCadastro: '2025-01-10' },
 ];
 
 export const RAMAIS_INICIAIS: Ramal[] = [

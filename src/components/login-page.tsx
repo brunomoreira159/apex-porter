@@ -13,13 +13,20 @@ type AuthMode = 'login' | 'register' | 'reset';
 // Particles for background animation
 function TacticalParticles() {
   const particles = useMemo(() =>
-    Array.from({ length: 20 }, (_, i) => ({
-      id: i,
-      left: `${Math.random() * 100}%`,
-      delay: `${Math.random() * 8}s`,
-      duration: `${6 + Math.random() * 8}s`,
-      size: 1 + Math.random() * 2,
-    })), []);
+    Array.from({ length: 20 }, (_, i) => {
+      const pseudoRandom1 = (i * 13.54) % 100;
+      const pseudoRandom2 = (i * 7.12) % 8;
+      const pseudoRandom3 = (i * 3.14) % 8;
+      const pseudoRandom4 = (i * 0.42) % 2;
+
+      return {
+        id: i,
+        left: `${pseudoRandom1}%`,
+        delay: `${pseudoRandom2}s`,
+        duration: `${6 + pseudoRandom3}s`,
+        size: 1 + pseudoRandom4,
+      };
+    }), []);
 
   return (
     <div className="absolute inset-0 overflow-hidden pointer-events-none">

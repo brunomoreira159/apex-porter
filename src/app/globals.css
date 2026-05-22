@@ -264,6 +264,26 @@ img, a, button, [role="button"] {
   fill: var(--muted-foreground);
 }
 
+/* Fix for radix dialog and scrollable elements getting stuck on mobile/touch */
+[data-slot="dialog-overlay"] {
+  /* Let touch events pass through the overlay to the scrollable dialog content */
+  touch-action: none;
+}
+
+[data-slot="dialog-content"] {
+  /* Prevent scroll chaining to the background page */
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  /* Allow vertical scrolling touch gestures inside the modal */
+  touch-action: pan-y;
+}
+
+.custom-scrollbar {
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
 /* Custom scrollbar styling */
 .custom-scrollbar::-webkit-scrollbar {
   width: 6px;

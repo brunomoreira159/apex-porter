@@ -58,7 +58,7 @@ function SheetContent({
       <SheetPrimitive.Content
         data-slot="sheet-content"
         className={cn(
-          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex flex-col gap-4 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500 overflow-y-auto overscroll-contain",
+          "bg-background data-[state=open]:animate-in data-[state=closed]:animate-out fixed z-50 flex flex-col gap-4 shadow-lg transition ease-in-out data-[state=closed]:duration-300 data-[state=open]:duration-500",
           side === "right" &&
             "data-[state=closed]:slide-out-to-right data-[state=open]:slide-in-from-right inset-y-0 right-0 h-full w-[85%] max-w-sm border-l",
           side === "left" &&
@@ -72,12 +72,18 @@ function SheetContent({
         style={{ 
           paddingBottom: side === 'bottom' ? 'max(1rem, env(safe-area-inset-bottom, 0px))' : undefined,
           paddingTop: side === 'top' ? 'max(1rem, env(safe-area-inset-top, 0px))' : undefined,
-          WebkitOverflowScrolling: 'touch',
-          touchAction: 'pan-y'
         }}
         {...props}
       >
-        {children}
+        <div 
+          className="flex-1 overflow-y-auto overscroll-contain"
+          style={{ 
+            WebkitOverflowScrolling: 'touch',
+            touchAction: 'pan-y',
+          }}
+        >
+          {children}
+        </div>
         <SheetPrimitive.Close className="ring-offset-background focus:ring-ring data-[state=open]:bg-secondary absolute top-4 right-4 rounded-full p-2 opacity-70 transition-opacity hover:opacity-100 focus:ring-2 focus:ring-offset-2 focus:outline-hidden disabled:pointer-events-none touch-manipulation active:scale-95">
           <XIcon className="size-5" />
           <span className="sr-only">Close</span>

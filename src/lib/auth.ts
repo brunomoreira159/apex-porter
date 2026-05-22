@@ -96,6 +96,12 @@ export async function resetPassword(email: string): Promise<void> {
 
 // ── Observe auth state changes (returns unsubscribe function) ──
 export function onAuthChange(callback: (user: FirebaseUser | null) => void): () => void {
+  // Handle case when Firebase is not configured
+  if (!auth) {
+    console.warn('[Firebase] Auth not configured, returning noop unsubscribe');
+    callback(null);
+    return () => {};
+  }
   return onAuthStateChanged(auth, callback);
 }
 

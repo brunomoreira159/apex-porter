@@ -276,16 +276,21 @@ img, a, button, [role="button"] {
 
 /* Fix for radix dialog and scrollable elements getting stuck on mobile/touch */
 [data-slot="dialog-overlay"] {
-  /* Let touch events pass through the overlay to the scrollable dialog content */
+  /* Prevent touch events on overlay from interfering with dialog scroll */
   touch-action: none;
+  pointer-events: auto;
 }
 
 [data-slot="dialog-content"] {
   /* Prevent scroll chaining to the background page */
   overscroll-behavior: contain;
+}
+
+/* Dialog scroll area */
+[data-slot="dialog-content"] [data-scroll-area] {
   -webkit-overflow-scrolling: touch;
-  /* Allow vertical scrolling touch gestures inside the modal */
   touch-action: pan-y;
+  overscroll-behavior: contain;
 }
 
 .custom-scrollbar {
@@ -297,15 +302,33 @@ img, a, button, [role="button"] {
 /* Fix for Radix Select dropdowns on mobile */
 [data-radix-popper-content-wrapper] {
   z-index: 50 !important;
+  /* Enable touch scrolling within popper content */
+  touch-action: pan-y !important;
 }
 
 [data-slot="select-content"],
-[data-slot="dropdown-menu-content"] {
-  max-height: 50vh !important;
-  overflow-y: auto !important;
+[data-slot="dropdown-menu-content"],
+[data-slot="popover-content"] {
   -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
   touch-action: pan-y;
+}
+
+/* Ensure select viewport is scrollable */
+[data-slot="select-content"] [data-radix-select-viewport] {
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+}
+
+/* Sheet content scroll */
+[data-slot="sheet-content"] {
+  overscroll-behavior: contain;
+}
+
+/* Drawer content scroll */
+[data-slot="drawer-content"] {
+  overscroll-behavior: contain;
 }
 
 /* Custom scrollbar styling */

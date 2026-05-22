@@ -493,14 +493,14 @@ export default function FluxoPage() {
             animate={{ height: 'auto', opacity: 1 }}
             className="space-y-3 overflow-hidden"
           >
-            {/* Filters Row */}
-            <div className="flex flex-row items-center gap-2">
+            {/* Filters Row 1: Categoria + Ordenacao */}
+            <div className="grid grid-cols-2 gap-2">
               {/* Category dropdown filter */}
               <Select
                 value={categoriaAtiva}
                 onValueChange={(v) => setCategoriaAtiva(v as CategoriaFluxo | 'todos')}
               >
-                <SelectTrigger className="h-11 text-base bg-muted/50 border-0 flex-1">
+                <SelectTrigger className="h-11 text-sm bg-muted/50 border-0 w-full truncate">
                   <SelectValue placeholder="Todos os tipos" />
                 </SelectTrigger>
                 <SelectContent>
@@ -518,7 +518,7 @@ export default function FluxoPage() {
                 value={ordenacao}
                 onValueChange={(v) => setOrdenacao(v as 'mais_recentes' | 'mais_antigos')}
               >
-                <SelectTrigger className="h-11 text-base bg-muted/50 border-0 flex-1">
+                <SelectTrigger className="h-11 text-sm bg-muted/50 border-0 w-full truncate">
                   <SelectValue placeholder="Ordenar" />
                 </SelectTrigger>
                 <SelectContent>
@@ -528,10 +528,10 @@ export default function FluxoPage() {
               </Select>
             </div>
 
-            {/* Filters Row 2 - Extra Filters */}
-            <div className="flex flex-row items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+            {/* Filters Row 2: Departamento + Empresa */}
+            <div className="grid grid-cols-2 gap-2">
               <Select value={filtroDepartamento} onValueChange={setFiltroDepartamento}>
-                <SelectTrigger className="h-10 text-sm bg-muted/50 border-0 min-w-[140px] flex-1">
+                <SelectTrigger className="h-10 text-sm bg-muted/50 border-0 w-full truncate">
                   <SelectValue placeholder="Departamento" />
                 </SelectTrigger>
                 <SelectContent>
@@ -543,7 +543,7 @@ export default function FluxoPage() {
               </Select>
 
               <Select value={filtroEmpresa} onValueChange={setFiltroEmpresa}>
-                <SelectTrigger className="h-10 text-sm bg-muted/50 border-0 min-w-[140px] flex-1">
+                <SelectTrigger className="h-10 text-sm bg-muted/50 border-0 w-full truncate">
                   <SelectValue placeholder="Empresa" />
                 </SelectTrigger>
                 <SelectContent>
@@ -553,25 +553,26 @@ export default function FluxoPage() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
 
-              <div className="relative flex-shrink-0 flex items-center">
-                <Input 
-                  type="date" 
-                  value={filtroData} 
-                  onChange={(e) => setFiltroData(e.target.value)} 
-                  className="h-10 text-sm bg-muted/50 border-0 pr-8"
-                />
-                {filtroData && (
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    className="absolute right-0 h-10 w-10 text-muted-foreground hover:text-foreground hover:bg-transparent"
-                    onClick={() => setFiltroData('')}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                )}
-              </div>
+            {/* Filters Row 3: Data */}
+            <div className="relative flex items-center">
+              <Input 
+                type="date" 
+                value={filtroData} 
+                onChange={(e) => setFiltroData(e.target.value)} 
+                className="h-10 text-sm bg-muted/50 border-0 w-full pr-10"
+              />
+              {filtroData && (
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="absolute right-0 h-10 w-10 text-muted-foreground hover:text-foreground hover:bg-transparent"
+                  onClick={() => setFiltroData('')}
+                >
+                  <X className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </motion.div>
         )}
@@ -619,7 +620,7 @@ export default function FluxoPage() {
                   : 'Nenhum registro encontrado'}
             </p>
             <p className="text-sm text-muted-foreground/70">
-              Toque em Registrar entrada para começar.
+              Toque em Registrar Entrada para começar.
             </p>
           </div>
         ) : (
@@ -767,7 +768,7 @@ export default function FluxoPage() {
           className="w-full h-13 bg-emerald-600 hover:bg-emerald-700 text-white text-base font-semibold shadow-lg"
         >
           <Plus className="h-5 w-5 mr-2" />
-          Registrar entrada
+          Registrar Entrada
         </Button>
       </div>
 

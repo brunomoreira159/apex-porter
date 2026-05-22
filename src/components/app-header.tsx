@@ -127,15 +127,6 @@ export default function AppHeader() {
 
         {/* Right: Ações */}
         <div className="flex items-center gap-1 justify-end">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-primary-foreground hover:bg-white/10 h-9 w-9"
-            onClick={() => setCurrentPage('configuracoes')}
-          >
-            <Settings className="h-4 w-4" />
-          </Button>
-
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button

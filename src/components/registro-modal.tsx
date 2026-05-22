@@ -27,7 +27,6 @@ import {
   type RegistroFluxo,
 } from '@/lib/data';
 import AutocompleteInput, { type AutocompleteSuggestion } from './autocomplete-input';
-import SearchInput from './search-input';
 import { toast } from 'sonner';
 import { AlertTriangle } from 'lucide-react';
 import { formatCpfRg } from '@/lib/utils';
@@ -885,30 +884,30 @@ export default function RegistroModal({
           <>
             <div className="space-y-2">
               <Label>Nome *</Label>
-              <SearchInput
+              <AutocompleteInput
                 value={formData.nome || ''}
                 onChange={(v) => updateField('nome', v)}
-                onSelect={handleAutoSelect}
+                onSelect={(s) => handleAutoSelect(s.data || {})}
                 suggestions={nameSuggestions}
                 placeholder="Nome completo"
               />
             </div>
             <div className="space-y-2">
               <Label>RG/CPF *</Label>
-              <SearchInput
+              <AutocompleteInput
                 value={formData.rgCpf || ''}
                 onChange={(v) => updateField('rgCpf', formatCpfRg(v))}
-                onSelect={handleAutoSelect}
+                onSelect={(s) => handleAutoSelect(s.data || {})}
                 suggestions={rgCpfSuggestions}
                 placeholder="00.000.000-0"
               />
             </div>
             <div className="space-y-2">
               <Label>Empresa *</Label>
-              <SearchInput
+              <AutocompleteInput
                 value={formData.empresa || ''}
                 onChange={(v) => updateField('empresa', v)}
-                onSelect={handleAutoSelect}
+                onSelect={(s) => handleAutoSelect(s.data || {})}
                 suggestions={empresaSuggestions}
                 placeholder="Selecione ou digite a empresa"
               />
@@ -948,30 +947,30 @@ export default function RegistroModal({
           <>
             <div className="space-y-2">
               <Label>Nome *</Label>
-              <SearchInput
+              <AutocompleteInput
                 value={formData.nome || ''}
                 onChange={(v) => updateField('nome', v)}
-                onSelect={handleAutoSelect}
+                onSelect={(s) => handleAutoSelect(s.data || {})}
                 suggestions={nameSuggestions}
                 placeholder="Nome completo"
               />
             </div>
             <div className="space-y-2">
               <Label>RG/CPF *</Label>
-              <SearchInput
+              <AutocompleteInput
                 value={formData.rgCpf || ''}
                 onChange={(v) => updateField('rgCpf', formatCpfRg(v))}
-                onSelect={handleAutoSelect}
+                onSelect={(s) => handleAutoSelect(s.data || {})}
                 suggestions={rgCpfSuggestions}
                 placeholder="00.000.000-0"
               />
             </div>
             <div className="space-y-2">
               <Label>Empresa *</Label>
-              <SearchInput
+              <AutocompleteInput
                 value={formData.empresa || ''}
                 onChange={(v) => updateField('empresa', v)}
-                onSelect={handleAutoSelect}
+                onSelect={(s) => handleAutoSelect(s.data || {})}
                 suggestions={empresaSuggestions}
                 placeholder="Selecione ou digite a empresa"
               />
@@ -1011,10 +1010,10 @@ export default function RegistroModal({
           <>
             <div className="space-y-2">
               <Label>Empresa *</Label>
-              <SearchInput
+              <AutocompleteInput
                 value={formData.empresa || ''}
                 onChange={(v) => updateField('empresa', v)}
-                onSelect={handleAutoSelect}
+                onSelect={(s) => handleAutoSelect(s.data || {})}
                 suggestions={empresaSuggestions}
                 placeholder="Selecione ou digite a empresa"
               />
@@ -1031,10 +1030,10 @@ export default function RegistroModal({
             </div>
             <div className="space-y-2">
               <Label>Nome do Motorista *</Label>
-              <SearchInput
+              <AutocompleteInput
                 value={formData.motorista || ''}
                 onChange={(v) => updateField('motorista', v)}
-                onSelect={handleAutoSelect}
+                onSelect={(s) => handleAutoSelect(s.data || {})}
                 suggestions={nameSuggestions}
                 placeholder="Nome do motorista"
               />
@@ -1063,30 +1062,30 @@ export default function RegistroModal({
           <>
             <div className="space-y-2">
               <Label>Nome do Motorista *</Label>
-              <SearchInput
+              <AutocompleteInput
                 value={formData.motorista || ''}
                 onChange={(v) => updateField('motorista', v)}
-                onSelect={handleAutoSelect}
+                onSelect={(s) => handleAutoSelect(s.data || {})}
                 suggestions={nameSuggestions}
                 placeholder="Nome do motorista"
               />
             </div>
             <div className="space-y-2">
               <Label>RG/CPF</Label>
-              <SearchInput
+              <AutocompleteInput
                 value={formData.cpfRg || ''}
                 onChange={(v) => updateField('cpfRg', formatCpfRg(v))}
-                onSelect={handleAutoSelect}
+                onSelect={(s) => handleAutoSelect(s.data || {})}
                 suggestions={rgCpfSuggestions}
                 placeholder="00.000.000-0"
               />
             </div>
             <div className="space-y-2">
               <Label>Empresa *</Label>
-              <SearchInput
+              <AutocompleteInput
                 value={formData.empresa || ''}
                 onChange={(v) => updateField('empresa', v)}
-                onSelect={handleAutoSelect}
+                onSelect={(s) => handleAutoSelect(s.data || {})}
                 suggestions={empresaSuggestions}
                 placeholder="Selecione ou digite a empresa"
               />
@@ -1145,30 +1144,30 @@ export default function RegistroModal({
           <>
             <div className="space-y-2">
               <Label>Nome do Motorista *</Label>
-              <SearchInput
+              <AutocompleteInput
                 value={formData.motorista || ''}
                 onChange={(v) => updateField('motorista', v)}
-                onSelect={handleAutoSelect}
+                onSelect={(s) => handleAutoSelect(s.data || {})}
                 suggestions={nameSuggestions}
                 placeholder="Nome do motorista"
               />
             </div>
             <div className="space-y-2">
               <Label>RG/CPF</Label>
-              <SearchInput
+              <AutocompleteInput
                 value={formData.rgCpf || ''}
                 onChange={(v) => updateField('rgCpf', formatCpfRg(v))}
-                onSelect={handleAutoSelect}
+                onSelect={(s) => handleAutoSelect(s.data || {})}
                 suggestions={rgCpfSuggestions}
                 placeholder="00.000.000-0"
               />
             </div>
             <div className="space-y-2">
               <Label>Empresa *</Label>
-              <SearchInput
+              <AutocompleteInput
                 value={formData.empresa || ''}
                 onChange={(v) => updateField('empresa', v)}
-                onSelect={handleAutoSelect}
+                onSelect={(s) => handleAutoSelect(s.data || {})}
                 suggestions={empresaSuggestions}
                 placeholder="Selecione ou digite a empresa"
               />
@@ -1207,20 +1206,20 @@ export default function RegistroModal({
           <>
             <div className="space-y-2">
               <Label>Nome do Colaborador *</Label>
-              <SearchInput
+              <AutocompleteInput
                 value={formData.nomeColaborador || ''}
                 onChange={(v) => updateField('nomeColaborador', v)}
-                onSelect={handleAutoSelect}
+                onSelect={(s) => handleAutoSelect(s.data || {})}
                 suggestions={nameSuggestions}
                 placeholder="Nome completo do colaborador"
               />
             </div>
             <div className="space-y-2">
               <Label>RG/CPF</Label>
-              <SearchInput
+              <AutocompleteInput
                 value={formData.rgCpf || ''}
                 onChange={(v) => updateField('rgCpf', formatCpfRg(v))}
-                onSelect={handleAutoSelect}
+                onSelect={(s) => handleAutoSelect(s.data || {})}
                 suggestions={rgCpfSuggestions}
                 placeholder="00.000.000-0"
               />
@@ -1261,10 +1260,10 @@ export default function RegistroModal({
             </div>
             <div className="space-y-2">
               <Label>Autorizado Por</Label>
-              <SearchInput
+              <AutocompleteInput
                 value={formData.autorizadoPor || ''}
                 onChange={(v) => updateField('autorizadoPor', v)}
-                onSelect={handleAutoSelect}
+                onSelect={(s) => handleAutoSelect(s.data || {})}
                 suggestions={nameSuggestions}
                 placeholder="Nome de quem autorizou"
               />
@@ -1288,20 +1287,20 @@ export default function RegistroModal({
           <>
             <div className="space-y-2">
               <Label>Destinatário *</Label>
-              <SearchInput
+              <AutocompleteInput
                 value={formData.destinatario || ''}
                 onChange={(v) => updateField('destinatario', v)}
-                onSelect={handleAutoSelect}
+                onSelect={(s) => handleAutoSelect(s.data || {})}
                 suggestions={nameSuggestions}
                 placeholder="Nome de quem vai receber"
               />
             </div>
             <div className="space-y-2">
               <Label>Remetente</Label>
-              <SearchInput
+              <AutocompleteInput
                 value={formData.remetente || ''}
                 onChange={(v) => updateField('remetente', v)}
-                onSelect={handleAutoSelect}
+                onSelect={(s) => handleAutoSelect(s.data || {})}
                 suggestions={empresaSuggestions}
                 placeholder="Quem enviou a correspondência"
               />

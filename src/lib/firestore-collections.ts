@@ -1,3 +1,5 @@
+'use client';
+
 // ── Firestore Collection-Specific Functions ──
 // Typed CRUD + real-time subscriptions for each collection
 // Phase 2: empresas, departamentos, pessoas, ramais

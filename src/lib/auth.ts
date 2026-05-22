@@ -1,3 +1,5 @@
+'use client';
+
 // ── Firebase Authentication Service ──
 // Provides sign-in, sign-up, sign-out, password reset, and auth state observation
 // Collection: "usuarios" (with email, nome, dataCadastro, ultimoLogin, senha)

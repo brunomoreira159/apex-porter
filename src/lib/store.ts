@@ -1,3 +1,5 @@
+'use client';
+
 import { create } from 'zustand';
 import { format } from 'date-fns';
 import type {

@@ -1,3 +1,5 @@
+'use client';
+
 // ── Generic Firestore CRUD Helpers ──
 // Reusable functions for all Firestore collections
 

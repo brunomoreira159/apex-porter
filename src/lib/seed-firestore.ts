@@ -1,3 +1,5 @@
+'use client';
+
 // ── Seed Firestore with initial data ──
 // Run this once to populate the database with the default cadastros data
 

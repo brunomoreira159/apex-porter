@@ -88,7 +88,7 @@ export default function ConfiguracoesPage() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="p-4 md:p-6 pb-28 space-y-4"
+      className="h-full overflow-y-auto overflow-x-hidden scrollable-list p-4 md:p-6 pb-28 space-y-4"
     >
       <div>
         <h2 className="text-xl font-bold">Configurações</h2>

@@ -201,7 +201,7 @@ export default function RelatoriosPage() {
   const handlePrint = () => window.print();
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="p-4 md:p-6 pb-24 space-y-4">
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full overflow-y-auto overflow-x-hidden scrollable-list p-4 md:p-6 pb-24 space-y-4">
       <div>
         <h2 className="text-xl font-bold">Relatórios Avançados</h2>
         <p className="text-sm text-muted-foreground">Filtre, analise e exporte dados</p>

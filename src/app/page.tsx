@@ -63,7 +63,7 @@ function PageRenderer() {
         animate={{ opacity: 1, y: 0 }}
         exit={{ opacity: 0, y: -8 }}
         transition={{ duration: 0.2 }}
-        className="flex-1 overflow-y-auto custom-scrollbar"
+        className="h-full"
       >
         {pages[currentPage] || <DashboardPage />}
       </motion.div>
@@ -311,9 +311,9 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className="h-full flex flex-col bg-background">
       <AppHeader />
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-hidden">
         <PageRenderer />
       </main>
       <BottomNav />

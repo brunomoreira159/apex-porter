@@ -247,7 +247,7 @@ export default function AvisosPage() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="p-4 md:p-6 pb-28 space-y-4"
+      className="flex flex-col h-full overflow-y-auto overflow-x-hidden scrollable-list p-4 md:p-6 pb-28 space-y-4"
     >
       {/* Header */}
       <div className="flex items-center justify-between">

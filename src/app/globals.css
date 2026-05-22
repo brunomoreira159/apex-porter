@@ -184,8 +184,18 @@ html, body {
   right: 0;
   bottom: 0;
   overflow-y: auto;
+  overflow-x: hidden;
   overscroll-behavior-y: contain;
   -webkit-overflow-scrolling: touch;
+}
+
+/* Scrollable list containers inside pages */
+.scrollable-list {
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  touch-action: pan-y;
 }
 
 /* Disable text selection on all UI elements for app-like experience */
@@ -281,6 +291,20 @@ img, a, button, [role="button"] {
 .custom-scrollbar {
   overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+
+/* Fix for Radix Select dropdowns on mobile */
+[data-radix-popper-content-wrapper] {
+  z-index: 50 !important;
+}
+
+[data-slot="select-content"],
+[data-slot="dropdown-menu-content"] {
+  max-height: 50vh !important;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   touch-action: pan-y;
 }
 

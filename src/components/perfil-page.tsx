@@ -92,7 +92,7 @@ export default function PerfilPage() {
       initial={{ opacity: 0, y: 12 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
-      className="p-4 md:p-8 max-w-3xl mx-auto space-y-6 pb-24"
+      className="h-full overflow-y-auto overflow-x-hidden scrollable-list p-4 md:p-8 max-w-3xl mx-auto space-y-6 pb-24"
     >
       {/* Top Header */}
       <div className="pb-2 border-b border-border/40">

@@ -456,7 +456,7 @@ export default function FluxoPage() {
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="flex flex-col min-h-[calc(100vh-7.5rem)]"
+      className="flex flex-col h-full"
     >
       {/* Top section: Search + Filter */}
       <div className="p-4 md:p-6 pb-0 space-y-3">
@@ -605,7 +605,7 @@ export default function FluxoPage() {
       </div>
 
       {/* Content area - card list */}
-      <div className="flex-1 p-4 md:p-6 pt-3 pb-44 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden scrollable-list p-4 md:p-6 pt-3 pb-44">
         {filteredRegistros.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
             <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mb-4">

@@ -152,12 +152,16 @@ function getAllFields(r: RegistroFluxo): { label: string; value: string }[] {
       base.push(formatRgCpfField(r.cpfRg));
       base.push({ label: 'Empresa', value: r.empresa });
       base.push({ label: 'Departamento', value: r.departamento });
+      if (r.pesoEntrada) base.push({ label: 'Peso Entrada', value: `${r.pesoEntrada.toLocaleString('pt-BR')} kg` });
+      if (r.pesoSaida) base.push({ label: 'Peso Saída', value: `${r.pesoSaida.toLocaleString('pt-BR')} kg` });
       break;
     case 'coleta':
       base.push({ label: 'Empresa', value: r.empresa });
       base.push({ label: 'Motorista', value: r.motorista });
       base.push({ label: 'Placa', value: r.placa });
       base.push(formatRgCpfField(r.rgCpf));
+      if (r.pesoEntrada) base.push({ label: 'Peso Entrada', value: `${r.pesoEntrada.toLocaleString('pt-BR')} kg` });
+      if (r.pesoSaida) base.push({ label: 'Peso Saída', value: `${r.pesoSaida.toLocaleString('pt-BR')} kg` });
       break;
     case 'movimentacao':
       base.push({ label: 'Nome do Colaborador', value: r.nomeColaborador });
@@ -375,7 +379,8 @@ export default function FluxoPage() {
 
   const handleRegistrarSaida = () => {
     if (!selectedRegistro) return;
-    const pesoSaida = selectedRegistro.categoria === 'pesagem'
+    const categoriaComPeso = selectedRegistro.categoria === 'pesagem' || selectedRegistro.categoria === 'coleta' || selectedRegistro.categoria === 'entregas2';
+    const pesoSaida = categoriaComPeso
       ? parseFloat(pesoSaidaInput.replace(',', '.')) || 0
       : undefined;
     const porteiroSaida = user?.nome || undefined;
@@ -635,6 +640,7 @@ export default function FluxoPage() {
               const CardIcon = catIcons[r.categoria] || Package;
 
               const isInactive = r.inativo;
+              const catLabel = CATEGORIAS_FLUXO.find(c => c.value === r.categoria)?.label || r.categoria;
               return (
                 <Card
                   key={r.id}
@@ -648,98 +654,101 @@ export default function FluxoPage() {
                   onClick={() => handleOpenDetail(r)}
                 >
                   <CardContent className="p-3.5">
-                    <div className="flex items-start gap-3">
-                      <div className="p-2.5 rounded-xl bg-muted shrink-0">
-                        <CardIcon className={`h-6 w-6 ${r.isRascunho ? 'text-red-500' : 'text-muted-foreground'}`} />
+                    {/* Topo: badge de categoria + badges de status */}
+                    <div className="flex items-center gap-2 flex-wrap mb-2.5">
+                      <Badge variant="secondary" className="flex items-center gap-1 text-[10px] font-semibold uppercase tracking-wide px-2 py-0.5">
+                        <CardIcon className={`h-3 w-3 ${r.isRascunho ? 'text-red-500' : ''}`} />
+                        {catLabel}
+                      </Badge>
+                      {r.isRascunho ? (
+                        <Badge variant="outline" className="text-red-600 bg-red-100 border-red-300 dark:bg-red-900/30 dark:border-red-800 text-xs px-1.5 py-0">
+                          Rascunho
+                        </Badge>
+                      ) : isInactive ? (
+                        <Badge variant="outline" className="text-red-500 border-red-300 dark:border-red-800 text-xs px-1.5 py-0">
+                          Inativo (Refeito)
+                        </Badge>
+                      ) : hasSaida ? (
+                        <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-xs px-1.5 py-0">
+                          Concluído
+                        </Badge>
+                      ) : (
+                        <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs px-1.5 py-0">
+                          Pendente
+                        </Badge>
+                      )}
+                    </div>
+
+                    {/* Conteúdo principal */}
+                    <div className="min-w-0">
+                      <h3 className={`font-bold text-lg truncate ${r.isRascunho ? 'text-red-700 dark:text-red-400' : ''}`}>{mainField}</h3>
+                      <div className="mt-1 space-y-0.5">
+                        {secondaryFields.map((field) => (
+                          <p key={field.label} className="text-base leading-snug text-muted-foreground">
+                            <span className="font-medium">{field.label}:</span> {field.value || '-'}
+                          </p>
+                        ))}
                       </div>
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <h3 className={`font-bold text-lg truncate ${r.isRascunho ? 'text-red-700 dark:text-red-400' : ''}`}>{mainField}</h3>
-                          {r.isRascunho ? (
-                            <Badge variant="outline" className="text-red-600 bg-red-100 border-red-300 dark:bg-red-900/30 dark:border-red-800 text-xs px-1.5 py-0">
-                              Rascunho
-                            </Badge>
-                          ) : isInactive ? (
-                            <Badge variant="outline" className="text-red-500 border-red-300 dark:border-red-800 text-xs px-1.5 py-0">
-                              Inativo (Refeito)
-                            </Badge>
-                          ) : hasSaida ? (
-                            <Badge className="bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400 text-xs px-1.5 py-0">
-                              Concluído
-                            </Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-amber-600 border-amber-300 text-xs px-1.5 py-0">
-                              Pendente
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="mt-1 space-y-0.5">
-                          {secondaryFields.map((field) => (
-                            <p key={field.label} className="text-base leading-snug text-muted-foreground">
-                              <span className="font-medium">{field.label}:</span> {field.value || '-'}
-                            </p>
-                          ))}
-                        </div>
 
-                        {/* PESAGEM DE CARGA — resultado em destaque nos finalizados */}
-                        {isPesagem && hasSaida && resultadoDif !== null && (
-                          <div className={`mt-2 rounded-xl px-3 py-2 border ${resultadoDif >= 0
-                            ? 'bg-emerald-500/10 border-emerald-500/30'
-                            : 'bg-red-500/10 border-red-500/30'
+                      {/* PESAGEM DE CARGA — resultado em destaque nos finalizados */}
+                      {isPesagem && hasSaida && resultadoDif !== null && (
+                        <div className={`mt-2 rounded-xl px-3 py-2 border ${resultadoDif >= 0
+                          ? 'bg-emerald-500/10 border-emerald-500/30'
+                          : 'bg-red-500/10 border-red-500/30'
+                          }`}>
+                          <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
+                            Resultado Pesagem
+                          </p>
+                          <p className={`text-2xl font-black ${resultadoDif >= 0 ? 'text-emerald-400' : 'text-red-400'
                             }`}>
-                            <p className="text-[10px] uppercase tracking-wider font-semibold text-muted-foreground">
-                              Resultado Pesagem
-                            </p>
-                            <p className={`text-2xl font-black ${resultadoDif >= 0 ? 'text-emerald-400' : 'text-red-400'
-                              }`}>
-                              {resultadoDif >= 0 ? '+' : ''}{resultadoDif.toLocaleString('pt-BR')} kg
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Entrada: {pesoEntrada.toLocaleString('pt-BR')} kg · Saída: {pesoSaidaVal.toLocaleString('pt-BR')} kg
-                            </p>
-                          </div>
-                        )}
+                            {resultadoDif >= 0 ? '+' : ''}{resultadoDif.toLocaleString('pt-BR')} kg
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Entrada: {pesoEntrada.toLocaleString('pt-BR')} kg · Saída: {pesoSaidaVal.toLocaleString('pt-BR')} kg
+                          </p>
+                        </div>
+                      )}
 
-                        {/* Porteiros */}
-                        {(porteiroEntrada || porteiroSaidaVal) && (
-                          <div className="mt-1 space-y-0.5">
-                            {porteiroEntrada === porteiroSaidaVal ? (
-                              <p className="text-base leading-snug text-muted-foreground">
-                                <span className="font-medium">PORTEIRO:</span> {porteiroEntrada}
-                              </p>
-                            ) : (
-                              <>
-                                {porteiroEntrada && (
-                                  <p className="text-base leading-snug text-muted-foreground">
-                                    <span className="font-medium">ENTRADA:</span> {porteiroEntrada}
-                                  </p>
-                                )}
-                                {porteiroSaidaVal && (
-                                  <p className="text-base leading-snug text-muted-foreground">
-                                    <span className="font-medium">SAÍDA:</span> {porteiroSaidaVal}
-                                  </p>
-                                )}
-                              </>
-                            )}
-                          </div>
-                        )}
-
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1.5">
-                            <Calendar className="h-4 w-4" />
-                            {data}
-                          </span>
-                          <span className="flex items-center gap-1.5">
-                            <Clock className="h-4 w-4" />
-                            Entrou ás: {horarioEntrada}
-                          </span>
-                          {hasSaida && (
-                            <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
-                              <LogOut className="h-4 w-4" />
-                              Saiu ás: {horarioSaida}
-                            </span>
+                      {/* Porteiros */}
+                      {(porteiroEntrada || porteiroSaidaVal) && (
+                        <div className="mt-1 space-y-0.5">
+                          {porteiroEntrada === porteiroSaidaVal ? (
+                            <p className="text-base leading-snug text-muted-foreground">
+                              <span className="font-medium">PORTEIRO:</span> {porteiroEntrada}
+                            </p>
+                          ) : (
+                            <>
+                              {porteiroEntrada && (
+                                <p className="text-base leading-snug text-muted-foreground">
+                                  <span className="font-medium">ENTRADA:</span> {porteiroEntrada}
+                                </p>
+                              )}
+                              {porteiroSaidaVal && (
+                                <p className="text-base leading-snug text-muted-foreground">
+                                  <span className="font-medium">SAÍDA:</span> {porteiroSaidaVal}
+                                </p>
+                              )}
+                            </>
                           )}
                         </div>
+                      )}
+
+                      {/* Rodapé: data e horários */}
+                      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 mt-2.5 pt-2 border-t border-border/40 text-sm text-muted-foreground">
+                        <span className="flex items-center gap-1.5">
+                          <Calendar className="h-4 w-4" />
+                          {data}
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <Clock className="h-4 w-4" />
+                          Entrou às: {horarioEntrada}
+                        </span>
+                        {hasSaida && (
+                          <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400">
+                            <LogOut className="h-4 w-4" />
+                            Saiu às: {horarioSaida}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </CardContent>
@@ -851,12 +860,13 @@ export default function FluxoPage() {
               {/* Only show detalhes/ocorrencia/saida if not yet finalized */}
               {!selectedRegistro.horarioSaida && (
                 <>
-                  {/* Peso de Saída — PESAGEM DE CARGA only */}
-                  {selectedRegistro.categoria === 'pesagem' && (() => {
+                  {/* Peso de Saída — PESAGEM DE CARGA, COLETA e ENTREGAS */}
+                  {(selectedRegistro.categoria === 'pesagem' || selectedRegistro.categoria === 'coleta' || selectedRegistro.categoria === 'entregas2') && (() => {
                     const pesoEntrada = (selectedRegistro as any).pesoEntrada ?? 0;
                     const pesoSaidaNum = parseFloat(pesoSaidaInput.replace(',', '.')) || 0;
                     const diferenca = pesoSaidaNum - pesoEntrada;
                     const hasDiferenca = pesoSaidaInput.trim() !== '' && pesoSaidaNum > 0;
+                    const hasPesoEntrada = pesoEntrada > 0;
                     return (
                       <div className="space-y-3">
                         <div className="space-y-1.5">
@@ -872,7 +882,7 @@ export default function FluxoPage() {
                             className="text-base"
                           />
                         </div>
-                        {hasDiferenca && (
+                        {hasDiferenca && hasPesoEntrada && (
                           <div className={`rounded-2xl p-4 text-center border-2 ${diferenca >= 0
                             ? 'bg-emerald-500/10 border-emerald-500/40'
                             : 'bg-red-500/10 border-red-500/40'

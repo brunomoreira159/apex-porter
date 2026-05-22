@@ -120,6 +120,8 @@ export interface RegistroEntregas2 extends BaseRegistroFluxo {
   empresa: string;
   departamento: string;
   horarioSaida: string;
+  pesoEntrada?: number;
+  pesoSaida?: number;
   detalhes?: string;
   ocorrencia?: string;
 }
@@ -133,6 +135,8 @@ export interface RegistroColeta extends BaseRegistroFluxo {
   motorista: string;
   data: string;
   horarioSaida: string;
+  pesoEntrada?: number;
+  pesoSaida?: number;
   detalhes?: string;
   ocorrencia?: string;
 }

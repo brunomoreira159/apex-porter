@@ -204,7 +204,7 @@ export default function EmpresasPage() {
                     <div className="w-1.5 shrink-0 bg-emerald-500" />
                     <div className="flex-1 p-3 flex items-center justify-between gap-3 min-w-0">
                       <div className="min-w-0 flex-1">
-                        <p className="font-semibold text-emerald-50 truncate">{e.nome}</p>
+                        <p className="font-semibold text-foreground truncate">{e.nome}</p>
                         <div className="text-xs text-muted-foreground space-y-0.5 truncate">
                           {e.cnpj && <p>CNPJ: {e.cnpj}</p>}
                           {e.contato && <p>Contato / Telefone: {e.contato}</p>}

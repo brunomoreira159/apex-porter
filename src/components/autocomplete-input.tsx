@@ -138,7 +138,11 @@ export default function AutocompleteInput({
         autoComplete="off"
       />
       {isOpen && displaySuggestions.length > 0 && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg overflow-hidden">
+        <div
+          className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover border border-border rounded-lg shadow-lg overflow-y-auto max-h-64 custom-scrollbar"
+          style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}
+          onTouchMove={(e) => e.stopPropagation()}
+        >
           {displaySuggestions.map((suggestion, index) => (
             <button
               key={`${suggestion.label}-${index}`}

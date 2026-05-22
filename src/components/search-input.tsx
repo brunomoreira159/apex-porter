@@ -153,7 +153,11 @@ export default function SearchInput({
       </div>
 
       {isOpen && (
-        <div className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover dark:bg-emerald-950/95 border border-border dark:border-emerald-800/40 backdrop-blur-md rounded-lg shadow-xl overflow-hidden max-h-60 overflow-y-auto custom-scrollbar">
+        <div
+          className="absolute z-50 top-full left-0 right-0 mt-1 bg-popover dark:bg-emerald-950/95 border border-border dark:border-emerald-800/40 backdrop-blur-md rounded-lg shadow-xl overflow-y-auto max-h-60 custom-scrollbar"
+          style={{ touchAction: 'pan-y', overscrollBehavior: 'contain' }}
+          onTouchMove={(e) => e.stopPropagation()}
+        >
           {filteredList.length === 0 ? (
             <div className="px-3 py-4 text-sm text-center text-muted-foreground dark:text-emerald-300/60">
               Nenhum registro encontrado

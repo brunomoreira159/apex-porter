@@ -663,6 +663,7 @@ export default function RegistroModal({
           empresa: formData.empresa,
           departamento: formData.departamento || '',
           horarioSaida: '',
+          ...(formData.pesoEntrada ? { pesoEntrada: Number(formData.pesoEntrada) } : {}),
         };
         break;
       case 'coleta':
@@ -680,6 +681,7 @@ export default function RegistroModal({
           motorista: formData.motorista,
           data: formData.data || format(new Date(), 'dd/MM/yyyy'),
           horarioSaida: '',
+          ...(formData.pesoEntrada ? { pesoEntrada: Number(formData.pesoEntrada) } : {}),
         };
         break;
       case 'movimentacao':
@@ -1053,6 +1055,15 @@ export default function RegistroModal({
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label>Peso de Entrada (kg) <span className="text-muted-foreground font-normal">(opcional)</span></Label>
+              <Input
+                type="number"
+                placeholder="Ex: 12500"
+                value={formData.pesoEntrada || ''}
+                onChange={(e) => updateField('pesoEntrada', e.target.value)}
+              />
+            </div>
           </>
         );
       case 'coleta':
@@ -1100,6 +1111,15 @@ export default function RegistroModal({
                 onSelect={handleAutoSelect}
                 suggestions={nameSuggestions}
                 placeholder="Nome do motorista"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Peso de Entrada (kg) <span className="text-muted-foreground font-normal">(opcional)</span></Label>
+              <Input
+                type="number"
+                placeholder="Ex: 12500"
+                value={formData.pesoEntrada || ''}
+                onChange={(e) => updateField('pesoEntrada', e.target.value)}
               />
             </div>
             <div className="space-y-2">

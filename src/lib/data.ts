@@ -41,7 +41,6 @@ export const CATEGORIAS_FLUXO: { value: CategoriaFluxo; label: string }[] = [
   { value: 'entregas2', label: 'ENTREGAS' },
   { value: 'coleta', label: 'COLETA' },
   { value: 'movimentacao', label: 'MOVIMENTAÇÃO INTERNA COLABORADORES' },
-  { value: 'correspondencias', label: 'CORRESPONDÊNCIAS' },
 ];
 
 export interface BaseRegistroFluxo {

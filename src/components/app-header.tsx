@@ -2,8 +2,7 @@
 
 import React from 'react';
 
-import { useTheme } from 'next-themes';
-import { Settings, LogOut, Sun, Moon, User as UserIcon } from 'lucide-react';
+import { Settings, LogOut, User as UserIcon } from 'lucide-react';
 import { useAppStore } from '@/lib/store';
 import { useSignalStrength, type SignalLevel } from '@/lib/hooks/use-signal-strength';
 import { Button } from '@/components/ui/button';
@@ -84,7 +83,6 @@ export default function AppHeader() {
   const handleLogout = () => {
     logout();
   };
-  const { theme, setTheme } = useTheme();
 
   const initials = user?.nome
     ? user.nome
@@ -129,24 +127,6 @@ export default function AppHeader() {
 
         {/* Right: Ações */}
         <div className="flex items-center gap-1 justify-end">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-primary-foreground hover:bg-white/10 h-9 w-9"
-            onClick={() => {
-              const root = document.documentElement;
-              const isDarkApex = root.classList.contains('dark-apex');
-              root.classList.remove('dark-apex');
-              if (isDarkApex || theme === 'dark') {
-                setTheme('light');
-              } else {
-                setTheme('dark');
-              }
-            }}
-          >
-            {theme === 'dark' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-          </Button>
-
           <Button
             variant="ghost"
             size="icon"

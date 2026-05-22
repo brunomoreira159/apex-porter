@@ -174,7 +174,7 @@ export default function RegistroModal({
   isRefacao,
   isRascunho,
 }: RegistroModalProps) {
-  const { addRegistroFluxo, inativarRegistroFluxo, pessoas, empresas, departamentos, ramais, registrosFluxo, user, addRascunhoFluxo, updateRascunhoFluxo, removeRascunhoFluxo, addEmpresa } = useAppStore();
+  const { addRegistroFluxo, inativarRegistroFluxo, pessoas, empresas, departamentos, ramais, registrosFluxo, user, addRascunhoFluxo, updateRascunhoFluxo, removeRascunhoFluxo, addEmpresa, addPessoa, updatePessoa } = useAppStore();
   const [isRascunhoEditing, setIsRascunhoEditing] = useState(false);
   const [coletaMessage, setColetaMessage] = useState<string | null>(null);
 
@@ -555,22 +555,52 @@ export default function RegistroModal({
       if (!nomeEmpresa) return;
       const nome = nomeEmpresa.trim();
       if (!nome) return;
-      
       const existe = empresas.some(
         (e) => e.nome.toLowerCase() === nome.toLowerCase()
       );
-      
       if (!existe) {
-        addEmpresa({
-          id: `emp_${Date.now()}`,
-          nome: nome,
-        });
+        addEmpresa({ id: `emp_${Date.now()}`, nome });
         toast.success(`Empresa "${nome}" cadastrada automaticamente!`);
       }
     };
 
+    // Salva ou atualiza a pessoa na coleção Cadastros
+    const checkAndCadastrarPessoa = (
+      nome: string,
+      opts: { empresa?: string; departamento?: string; rgCpf?: string; tipo?: string }
+    ) => {
+      const nomeTrim = nome.trim();
+      if (!nomeTrim) return;
+      const existing = pessoas.find(
+        (p) => p.nome.toLowerCase() === nomeTrim.toLowerCase() && !p.inativo
+      );
+      if (existing) {
+        // Atualiza campos se vierem preenchidos e ainda não estiverem salvos
+        const updates: Partial<typeof existing> = {};
+        if (opts.empresa && !existing.empresa) updates.empresa = opts.empresa.trim();
+        if (opts.departamento && !existing.departamento) updates.departamento = opts.departamento.trim();
+        if (opts.rgCpf && !existing.rgCpf) updates.rgCpf = opts.rgCpf.trim();
+        if (Object.keys(updates).length > 0) {
+          updatePessoa({ ...existing, ...updates });
+        }
+      } else {
+        addPessoa({
+          id: `pessoa_${Date.now()}`,
+          nome: nomeTrim,
+          tipo: (opts.tipo || 'Visitante') as import('@/lib/data').TipoPessoa,
+          empresa: opts.empresa?.trim() || '',
+          departamento: opts.departamento?.trim() || '',
+          rgCpf: opts.rgCpf?.trim() || '',
+          placa: '',
+          cargo: '',
+          telefone: '',
+          email: '',
+        });
+      }
+    };
+
     if (formData.empresa) {
-        checkAndCadastrarEmpresa(formData.empresa);
+      checkAndCadastrarEmpresa(formData.empresa);
     }
 
     const id = `fl_${Date.now()}`;
@@ -748,6 +778,35 @@ export default function RegistroModal({
     }
 
     addRegistroFluxo(registro);
+
+    // Auto-cadastrar pessoa na coleção Cadastros
+    switch (categoria) {
+      case 'entregas1':
+        if (formData.nome) checkAndCadastrarPessoa(formData.nome, { empresa: formData.empresa, rgCpf: formData.rgCpf, tipo: 'Visitante' });
+        break;
+      case 'visitantes':
+        if (formData.nome) checkAndCadastrarPessoa(formData.nome, { empresa: formData.empresa, departamento: formData.departamento, rgCpf: formData.rgCpf, tipo: 'Visitante' });
+        break;
+      case 'prestadores':
+        if (formData.nome) checkAndCadastrarPessoa(formData.nome, { empresa: formData.empresa, departamento: formData.departamento, rgCpf: formData.rgCpf, tipo: 'Prestador' });
+        break;
+      case 'pesagem':
+        if (formData.motorista) checkAndCadastrarPessoa(formData.motorista, { empresa: formData.empresa, tipo: 'Motorista' });
+        break;
+      case 'entregas2':
+        if (formData.motorista) checkAndCadastrarPessoa(formData.motorista, { empresa: formData.empresa, departamento: formData.departamento, rgCpf: formData.cpfRg, tipo: 'Motorista' });
+        break;
+      case 'coleta':
+        if (formData.motorista) checkAndCadastrarPessoa(formData.motorista, { empresa: formData.empresa, rgCpf: formData.rgCpf, tipo: 'Motorista' });
+        break;
+      case 'movimentacao':
+        if (formData.nomeColaborador) checkAndCadastrarPessoa(formData.nomeColaborador, { rgCpf: formData.rgCpf, tipo: 'Colaborador' });
+        break;
+      case 'correspondencias':
+        if (formData.destinatario) checkAndCadastrarPessoa(formData.destinatario, { departamento: formData.departamento, tipo: 'Visitante' });
+        break;
+    }
+
     toast.success(isRefacao ? 'Nova versão do registro salva com sucesso!' : 'Registro adicionado com sucesso!');
 
     if (categoria === 'coleta') {

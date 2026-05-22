@@ -143,21 +143,22 @@ function getAllFields(r: RegistroFluxo): { label: string; value: string }[] {
     case 'pesagem':
       base.push({ label: 'Empresa', value: r.empresa });
       base.push({ label: 'Placa', value: r.placa });
-      base.push({ label: 'Motorista', value: r.motorista });
+      base.push({ label: 'Nome do Motorista', value: r.motorista });
       base.push({ label: 'Peso Entrada', value: `${r.pesoEntrada.toLocaleString('pt-BR')} kg` });
       if (r.pesoSaida) base.push({ label: 'Peso Saída', value: `${r.pesoSaida.toLocaleString('pt-BR')} kg` });
       break;
     case 'entregas2':
-      base.push({ label: 'Motorista', value: r.motorista });
+      base.push({ label: 'Nome do Motorista', value: r.motorista });
       base.push(formatRgCpfField(r.cpfRg));
       base.push({ label: 'Empresa', value: r.empresa });
       base.push({ label: 'Departamento', value: r.departamento });
+      if (r.placa) base.push({ label: 'Placa', value: r.placa });
       if (r.pesoEntrada) base.push({ label: 'Peso Entrada', value: `${r.pesoEntrada.toLocaleString('pt-BR')} kg` });
       if (r.pesoSaida) base.push({ label: 'Peso Saída', value: `${r.pesoSaida.toLocaleString('pt-BR')} kg` });
       break;
     case 'coleta':
       base.push({ label: 'Empresa', value: r.empresa });
-      base.push({ label: 'Motorista', value: r.motorista });
+      base.push({ label: 'Nome do Motorista', value: r.motorista });
       base.push({ label: 'Placa', value: r.placa });
       base.push(formatRgCpfField(r.rgCpf));
       if (r.pesoEntrada) base.push({ label: 'Peso Entrada', value: `${r.pesoEntrada.toLocaleString('pt-BR')} kg` });
@@ -166,8 +167,8 @@ function getAllFields(r: RegistroFluxo): { label: string; value: string }[] {
     case 'movimentacao':
       base.push({ label: 'Nome do Colaborador', value: r.nomeColaborador });
       base.push(formatRgCpfField(r.rgCpf));
+      base.push({ label: 'Movimentação', value: r.tipoMovimentacao === 'saindo' ? 'Saindo' : 'Entrando' });
       base.push({ label: 'Autorizado Por', value: r.autorizadoPor });
-      base.push({ label: 'Assinatura Colaborador', value: r.assinaturaColaborador });
       base.push({ label: 'Porteiro', value: r.porteiro });
       break;
     case 'correspondencias':

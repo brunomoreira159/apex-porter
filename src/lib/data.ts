@@ -119,6 +119,7 @@ export interface RegistroEntregas2 extends BaseRegistroFluxo {
   cpfRg: string;
   empresa: string;
   departamento: string;
+  placa?: string;
   horarioSaida: string;
   pesoEntrada?: number;
   pesoSaida?: number;
@@ -147,8 +148,8 @@ export interface RegistroMovimentacao extends BaseRegistroFluxo {
   rgCpf: string;
   horarioEntrada: string;
   horarioSaida: string;
+  tipoMovimentacao: 'entrando' | 'saindo';
   autorizadoPor: string;
-  assinaturaColaborador: string;
   porteiro: string;
   data: string;
   detalhes?: string;

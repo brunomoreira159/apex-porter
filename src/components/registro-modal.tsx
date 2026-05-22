@@ -503,7 +503,7 @@ export default function RegistroModal({
         registro = { ...registro, rgCpf: formData.rgCpf || '', placa: formData.placa || '', empresa: formData.empresa || '', motorista: formData.motorista || '' };
         break;
       case 'movimentacao':
-        registro = { ...registro, nomeColaborador: formData.nomeColaborador || '', rgCpf: formData.rgCpf || '', autorizadoPor: formData.autorizadoPor || '', assinaturaColaborador: formData.assinaturaColaborador || '', porteiro: formData.porteiro || '' };
+        registro = { ...registro, nomeColaborador: formData.nomeColaborador || '', rgCpf: formData.rgCpf || '', tipoMovimentacao: (formData.tipoMovimentacao as 'entrando' | 'saindo') || 'entrando', autorizadoPor: formData.autorizadoPor || '', porteiro: formData.porteiro || user?.nome || '' };
         break;
       case 'correspondencias':
         registro = { ...registro, destinatario: formData.destinatario || '', remetente: formData.remetente || '', tipo: formData.tipo || '', departamento: formData.departamento || '', quemRetirou: '', porteiro: formData.porteiro || user?.nome || '' };
@@ -662,6 +662,7 @@ export default function RegistroModal({
           cpfRg: formData.cpfRg || '',
           empresa: formData.empresa,
           departamento: formData.departamento || '',
+          placa: formData.placa || '',
           horarioSaida: '',
           ...(formData.pesoEntrada ? { pesoEntrada: Number(formData.pesoEntrada) } : {}),
         };
@@ -684,24 +685,27 @@ export default function RegistroModal({
           ...(formData.pesoEntrada ? { pesoEntrada: Number(formData.pesoEntrada) } : {}),
         };
         break;
-      case 'movimentacao':
+      case 'movimentacao': {
         if (!formData.nomeColaborador) {
           toast.error('Preencha o nome do colaborador');
           return;
         }
+        const tipoMov = (formData.tipoMovimentacao as 'entrando' | 'saindo') || 'entrando';
+        const horaAtual = format(new Date(), 'HH:mm');
         registro = {
           id,
           categoria: 'movimentacao',
           nomeColaborador: formData.nomeColaborador,
           rgCpf: formData.rgCpf || '',
-          horarioEntrada: formData.horarioEntrada || format(new Date(), 'HH:mm'),
-          horarioSaida: '',
+          horarioEntrada: tipoMov === 'entrando' ? horaAtual : '',
+          horarioSaida: tipoMov === 'saindo' ? horaAtual : '',
+          tipoMovimentacao: tipoMov,
           autorizadoPor: formData.autorizadoPor || '',
-          assinaturaColaborador: formData.assinaturaColaborador || '',
-          porteiro: formData.porteiro || '',
+          porteiro: formData.porteiro || user?.nome || '',
           data: formData.data || format(new Date(), 'dd/MM/yyyy'),
         };
         break;
+      }
       case 'correspondencias':
         if (!formData.destinatario) {
           toast.error('Preencha o destinatário');
@@ -772,18 +776,11 @@ export default function RegistroModal({
 
   const renderFields = () => {
     const activeCatForFields = categoria || categoriaInicial || 'entregas2';
+    const tipoMov = (formData.tipoMovimentacao as 'entrando' | 'saindo') || 'entrando';
     switch (activeCatForFields) {
       case 'entregas1':
         return (
           <>
-            <div className="space-y-2">
-              <Label>Data</Label>
-              <Input value={formData.data || ''} readOnly className="bg-muted" />
-            </div>
-            <div className="space-y-2">
-              <Label>Horário Entrada</Label>
-              <Input value={formData.horarioEntrada || ''} readOnly className="bg-muted" />
-            </div>
             <div className="space-y-2">
               <Label>Nome *</Label>
               <AutocompleteInput
@@ -792,6 +789,16 @@ export default function RegistroModal({
                 onSelect={(s) => handleAutoSelect(s.data || {})}
                 suggestions={nameSuggestions}
                 placeholder="Nome completo"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>RG/CPF</Label>
+              <AutocompleteInput
+                value={formData.rgCpf || ''}
+                onChange={(v) => updateField('rgCpf', formatCpfRg(v))}
+                onSelect={(s) => handleAutoSelect(s.data || {})}
+                suggestions={rgCpfSuggestions}
+                placeholder="00.000.000-0"
               />
             </div>
             <div className="space-y-2">
@@ -805,14 +812,12 @@ export default function RegistroModal({
               />
             </div>
             <div className="space-y-2">
-              <Label>RG/CPF</Label>
-              <AutocompleteInput
-                value={formData.rgCpf || ''}
-                onChange={(v) => updateField('rgCpf', formatCpfRg(v))}
-                onSelect={(s) => handleAutoSelect(s.data || {})}
-                suggestions={rgCpfSuggestions}
-                placeholder="00.000.000-0"
-              />
+              <Label>Data</Label>
+              <Input value={formData.data || ''} readOnly className="bg-muted" />
+            </div>
+            <div className="space-y-2">
+              <Label>Horário Entrada</Label>
+              <Input value={formData.horarioEntrada || ''} readOnly className="bg-muted" />
             </div>
           </>
         );
@@ -827,6 +832,16 @@ export default function RegistroModal({
                 onSelect={handleAutoSelect}
                 suggestions={nameSuggestions}
                 placeholder="Nome completo"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>RG/CPF *</Label>
+              <SearchInput
+                value={formData.rgCpf || ''}
+                onChange={(v) => updateField('rgCpf', formatCpfRg(v))}
+                onSelect={handleAutoSelect}
+                suggestions={rgCpfSuggestions}
+                placeholder="00.000.000-0"
               />
             </div>
             <div className="space-y-2">
@@ -858,16 +873,6 @@ export default function RegistroModal({
                     ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div className="space-y-2">
-              <Label>RG/CPF</Label>
-              <SearchInput
-                value={formData.rgCpf || ''}
-                onChange={(v) => updateField('rgCpf', formatCpfRg(v))}
-                onSelect={handleAutoSelect}
-                suggestions={rgCpfSuggestions}
-                placeholder="00.000.000-0"
-              />
             </div>
             <div className="space-y-2">
               <Label>Data</Label>
@@ -893,6 +898,16 @@ export default function RegistroModal({
               />
             </div>
             <div className="space-y-2">
+              <Label>RG/CPF *</Label>
+              <SearchInput
+                value={formData.rgCpf || ''}
+                onChange={(v) => updateField('rgCpf', formatCpfRg(v))}
+                onSelect={handleAutoSelect}
+                suggestions={rgCpfSuggestions}
+                placeholder="00.000.000-0"
+              />
+            </div>
+            <div className="space-y-2">
               <Label>Empresa *</Label>
               <SearchInput
                 value={formData.empresa || ''}
@@ -923,16 +938,6 @@ export default function RegistroModal({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>RG/CPF</Label>
-              <SearchInput
-                value={formData.rgCpf || ''}
-                onChange={(v) => updateField('rgCpf', formatCpfRg(v))}
-                onSelect={handleAutoSelect}
-                suggestions={rgCpfSuggestions}
-                placeholder="00.000.000-0"
-              />
-            </div>
-            <div className="space-y-2">
               <Label>Data</Label>
               <Input value={formData.data || ''} readOnly className="bg-muted" />
             </div>
@@ -945,10 +950,6 @@ export default function RegistroModal({
       case 'pesagem':
         return (
           <>
-            <div className="space-y-2">
-              <Label>Data</Label>
-              <Input value={formData.data || ''} readOnly className="bg-muted" />
-            </div>
             <div className="space-y-2">
               <Label>Empresa *</Label>
               <SearchInput
@@ -970,7 +971,7 @@ export default function RegistroModal({
               />
             </div>
             <div className="space-y-2">
-              <Label>Motorista *</Label>
+              <Label>Nome do Motorista *</Label>
               <SearchInput
                 value={formData.motorista || ''}
                 onChange={(v) => updateField('motorista', v)}
@@ -978,10 +979,6 @@ export default function RegistroModal({
                 suggestions={nameSuggestions}
                 placeholder="Nome do motorista"
               />
-            </div>
-            <div className="space-y-2">
-              <Label>Horário Entrada</Label>
-              <Input value={formData.horarioEntrada || ''} readOnly className="bg-muted" />
             </div>
             <div className="space-y-2">
               <Label>Peso de Entrada (kg)</Label>
@@ -992,11 +989,6 @@ export default function RegistroModal({
                 onChange={(e) => updateField('pesoEntrada', e.target.value)}
               />
             </div>
-          </>
-        );
-      case 'entregas2':
-        return (
-          <>
             <div className="space-y-2">
               <Label>Data</Label>
               <Input value={formData.data || ''} readOnly className="bg-muted" />
@@ -1005,8 +997,13 @@ export default function RegistroModal({
               <Label>Horário Entrada</Label>
               <Input value={formData.horarioEntrada || ''} readOnly className="bg-muted" />
             </div>
+          </>
+        );
+      case 'entregas2':
+        return (
+          <>
             <div className="space-y-2">
-              <Label>Motorista *</Label>
+              <Label>Nome do Motorista *</Label>
               <SearchInput
                 value={formData.motorista || ''}
                 onChange={(v) => updateField('motorista', v)}
@@ -1016,7 +1013,7 @@ export default function RegistroModal({
               />
             </div>
             <div className="space-y-2">
-              <Label>CPF/RG</Label>
+              <Label>RG/CPF</Label>
               <SearchInput
                 value={formData.cpfRg || ''}
                 onChange={(v) => updateField('cpfRg', formatCpfRg(v))}
@@ -1056,34 +1053,6 @@ export default function RegistroModal({
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Peso de Entrada (kg) <span className="text-muted-foreground font-normal">(opcional)</span></Label>
-              <Input
-                type="number"
-                placeholder="Ex: 12500"
-                value={formData.pesoEntrada || ''}
-                onChange={(e) => updateField('pesoEntrada', e.target.value)}
-              />
-            </div>
-          </>
-        );
-      case 'coleta':
-        return (
-          <>
-            <div className="space-y-2">
-              <Label>RG/CPF</Label>
-              <SearchInput
-                value={formData.rgCpf || ''}
-                onChange={(v) => updateField('rgCpf', formatCpfRg(v))}
-                onSelect={handleAutoSelect}
-                suggestions={rgCpfSuggestions}
-                placeholder="00.000.000-0"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Horário Entrada</Label>
-              <Input value={formData.horarioEntrada || ''} readOnly className="bg-muted" />
-            </div>
-            <div className="space-y-2">
               <Label>Placa</Label>
               <AutocompleteInput
                 value={formData.placa || ''}
@@ -1091,26 +1060,6 @@ export default function RegistroModal({
                 onSelect={(s) => handleAutoSelect(s.data || {})}
                 suggestions={placaSuggestions}
                 placeholder="ABC-1D23"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Empresa *</Label>
-              <SearchInput
-                value={formData.empresa || ''}
-                onChange={(v) => updateField('empresa', v)}
-                onSelect={handleAutoSelect}
-                suggestions={empresaSuggestions}
-                placeholder="Selecione ou digite a empresa"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Motorista *</Label>
-              <SearchInput
-                value={formData.motorista || ''}
-                onChange={(v) => updateField('motorista', v)}
-                onSelect={handleAutoSelect}
-                suggestions={nameSuggestions}
-                placeholder="Nome do motorista"
               />
             </div>
             <div className="space-y-2">
@@ -1125,6 +1074,72 @@ export default function RegistroModal({
             <div className="space-y-2">
               <Label>Data</Label>
               <Input value={formData.data || ''} readOnly className="bg-muted" />
+            </div>
+            <div className="space-y-2">
+              <Label>Horário Entrada</Label>
+              <Input value={formData.horarioEntrada || ''} readOnly className="bg-muted" />
+            </div>
+          </>
+        );
+      case 'coleta':
+        return (
+          <>
+            <div className="space-y-2">
+              <Label>Nome do Motorista *</Label>
+              <SearchInput
+                value={formData.motorista || ''}
+                onChange={(v) => updateField('motorista', v)}
+                onSelect={handleAutoSelect}
+                suggestions={nameSuggestions}
+                placeholder="Nome do motorista"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>RG/CPF</Label>
+              <SearchInput
+                value={formData.rgCpf || ''}
+                onChange={(v) => updateField('rgCpf', formatCpfRg(v))}
+                onSelect={handleAutoSelect}
+                suggestions={rgCpfSuggestions}
+                placeholder="00.000.000-0"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Empresa *</Label>
+              <SearchInput
+                value={formData.empresa || ''}
+                onChange={(v) => updateField('empresa', v)}
+                onSelect={handleAutoSelect}
+                suggestions={empresaSuggestions}
+                placeholder="Selecione ou digite a empresa"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Placa</Label>
+              <AutocompleteInput
+                value={formData.placa || ''}
+                onChange={(v) => updateField('placa', v.toUpperCase())}
+                onSelect={(s) => handleAutoSelect(s.data || {})}
+                suggestions={placaSuggestions}
+                placeholder="ABC-1D23"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Peso de Entrada (kg) <span className="text-muted-foreground font-normal">(opcional)</span></Label>
+              <Input
+                type="number"
+                placeholder="Ex: 12500"
+                value={formData.pesoEntrada || ''}
+                onChange={(e) => updateField('pesoEntrada', e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Data</Label>
+              <Input value={formData.data || ''} readOnly className="bg-muted" />
+            </div>
+            <div className="space-y-2">
+              <Label>Horário Entrada</Label>
+              <Input value={formData.horarioEntrada || ''} readOnly className="bg-muted" />
             </div>
           </>
         );
@@ -1151,8 +1166,38 @@ export default function RegistroModal({
                 placeholder="00.000.000-0"
               />
             </div>
+            {/* Checkbox Entrando / Saindo */}
             <div className="space-y-2">
-              <Label>Horário Entrada</Label>
+              <Label>Movimentação *</Label>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => updateField('tipoMovimentacao', 'entrando')}
+                  className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 py-2.5 text-sm font-semibold transition-colors ${
+                    tipoMov === 'entrando'
+                      ? 'border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                      : 'border-border bg-background text-muted-foreground hover:border-emerald-500/50'
+                  }`}
+                >
+                  <span className="text-base">→</span>
+                  Entrando
+                </button>
+                <button
+                  type="button"
+                  onClick={() => updateField('tipoMovimentacao', 'saindo')}
+                  className={`flex-1 flex items-center justify-center gap-2 rounded-lg border-2 py-2.5 text-sm font-semibold transition-colors ${
+                    tipoMov === 'saindo'
+                      ? 'border-amber-500 bg-amber-500/10 text-amber-700 dark:text-amber-400'
+                      : 'border-border bg-background text-muted-foreground hover:border-amber-500/50'
+                  }`}
+                >
+                  <span className="text-base">←</span>
+                  Saindo
+                </button>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>{tipoMov === 'saindo' ? 'Horário Saída' : 'Horário Entrada'}</Label>
               <Input value={formData.horarioEntrada || ''} readOnly className="bg-muted" />
             </div>
             <div className="space-y-2">
@@ -1163,14 +1208,6 @@ export default function RegistroModal({
                 onSelect={handleAutoSelect}
                 suggestions={nameSuggestions}
                 placeholder="Nome de quem autorizou"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Assinatura Colaborador</Label>
-              <Input
-                value={formData.assinaturaColaborador || ''}
-                onChange={(e) => updateField('assinaturaColaborador', e.target.value)}
-                placeholder="Assinatura do colaborador"
               />
             </div>
             <div className="space-y-2">
@@ -1300,7 +1337,7 @@ export default function RegistroModal({
 
           <div className="space-y-2">
             <Label className="flex items-center gap-1">
-              Categoria <span className="text-red-500">*</span>
+              Tipo de Visita <span className="text-red-500">*</span>
             </Label>
             <Select
               value={categoria}
@@ -1308,7 +1345,7 @@ export default function RegistroModal({
               disabled={isRefacao}
             >
               <SelectTrigger className={!categoria ? 'text-muted-foreground border-amber-500/50 focus:ring-amber-500' : ''}>
-                <SelectValue placeholder="Selecione a categoria obrigatória" />
+                <SelectValue placeholder="Selecione o tipo de visita" />
               </SelectTrigger>
               <SelectContent>
                 {CATEGORIAS_FLUXO.map((cat) => (
